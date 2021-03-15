@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+// The request message containing the name.
+message {{project}}Request {
+    string name = 1;
+}
+
+// The response message containing the greetings
+message {{project}}Reply {
+    string message = 1;
+    google.protobuf.Timestamp timestamp = 2;
+}

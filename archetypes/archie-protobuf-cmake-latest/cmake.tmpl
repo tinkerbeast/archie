@@ -1,0 +1,27 @@
+project({{namespace}}-{{project}})
+cmake_minimum_required(VERSION 3.12.4)
+
+message(DEBUG "PROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR} CMAKE_CURRENT_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}")
+
+find_package(Protobuf REQUIRED)
+
+set(ARCHIE_DEV_ERROR_FLAGS -pedantic -pedantic-errors -Wall -Werror -Wcast-align -Wcast-qual -Wconversion -Wdisabled-optimization -Wextra -Wfloat-equal -Wformat=2 -Wformat-nonliteral -Wformat-security -Wformat-y2k -Wimport -Winit-self -Winline -Winvalid-pch -Wmissing-field-initializers -Wmissing-format-attribute -Wmissing-include-dirs -Wmissing-noreturn -Wnon-virtual-dtor -Wpacked -Wpointer-arith -Wredundant-decls -Wsign-conversion -Wstack-protector -Wstrict-aliasing=2 -Wunreachable-code -Wunused -Wunused-parameter -Wvariadic-macros -Wwrite-strings)
+
+set(ARCHIE_DEV_DEPENDENCIES protobuf::libprotobuf)
+
+function(archie_add_proto_lib lib_name lib_proto)
+    add_library(${lib_name} SHARED ${lib_proto})
+    target_compile_options(${lib_name} PRIVATE ${ARCHIE_DEV_ERROR_FLAGS})
+    target_link_libraries(${lib_name} PRIVATE ${ARCHIE_DEV_DEPENDENCIES})
+    protobuf_generate_cpp(lib_srcs lib_hdrs ${lib_proto})
+    message(DEBUG "archie_add_proto_lib headers=${lib_hdrs} binary_dir=${CMAKE_CURRENT_BINARY_DIR}")
+    target_include_directories(${lib_name} PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+    protobuf_generate(TARGET ${lib_name})
+endfunction()
+
+archie_add_proto_lib(backmodel ${CMAKE_CURRENT_SOURCE_DIR}/{{project}}.proto)
+
+
+
+
+

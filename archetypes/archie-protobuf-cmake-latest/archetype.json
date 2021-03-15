@@ -1,0 +1,6 @@
+{
+    "files": [
+        {"name": "{{project}}/{{project}}.proto", "template": "proto.tmpl"},
+        {"name": "{{project}}/CMakeLists.txt", "template": "cmake.tmpl"}
+    ]
+}
