@@ -16,7 +16,7 @@ def test_abc():
     project = 'myProject'
     archetype = 'archie-protobuf-cmake'
     data = {'myProject/myProject.proto': '1cd343e6add6c1286ddf814b4d223e2d',
-            'myProject/CMakeLists.txt': '22a5db8038ae7827d2dd786022af5fc5'}
+            'myProject/CMakeLists.txt': 'ce4171d66ca983390ebd0560ad8e79ad'}
     # Run archie on given archetype
     cmd = 'mvn  package'
     out = subprocess.run(cmd, shell=True, check=True, stdout=subprocess.PIPE, text=True)
