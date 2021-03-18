@@ -1,4 +1,4 @@
-project({{namespace}}-{{project}})
+project({{namespaceCmake}}-{{project}})
 cmake_minimum_required(VERSION 3.12.4)
 
 message(DEBUG "PROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR} CMAKE_CURRENT_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}")
@@ -19,9 +19,4 @@ function(archie_add_proto_lib lib_name lib_proto)
     protobuf_generate(TARGET ${lib_name})
 endfunction()
 
-archie_add_proto_lib(backmodel ${CMAKE_CURRENT_SOURCE_DIR}/{{project}}.proto)
-
-
-
-
-
+archie_add_proto_lib({{namespaceCmake}}-{{project}} ${CMAKE_CURRENT_SOURCE_DIR}/{{project}}.proto)

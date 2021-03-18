@@ -1,0 +1,101 @@
+project({{namespaceCmake}}-{{project}}
+    DESCRIPTION "A simple C++ project"
+    LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.12.4)
+
+
+# === Define defaults ========================================================
+
+# Default build type
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Debug")
+endif()
+
+# TODO(rishin): Parametrise C++ standard
+# Default cpp version
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Default build flags
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    # error options
+    # See https://stackoverflow.com/questions/5088460/flags-to-enable-thorough-and-verbose-g-warnings
+    # See https://stackoverflow.com/questions/399850/best-compiler-warning-level-for-c-c-compilers/401276#401276
+    set(ARCHIE_ERROR_FLAGS -pedantic -pedantic-errors -Wall -Werror -Wcast-align -Wcast-qual -Wconversion -Wdisabled-optimization -Wextra -Wfloat-equal -Wformat=2 -Wformat-nonliteral -Wformat-security -Wformat-y2k -Wimport -Winit-self -Winline -Winvalid-pch -Wmissing-field-initializers -Wmissing-format-attribute -Wmissing-include-dirs -Wmissing-noreturn -Wnon-virtual-dtor -Wpacked -Wpointer-arith -Wredundant-decls -Wsign-conversion -Wstack-protector -Wstrict-aliasing=2 -Wunreachable-code -Wunused -Wunused-parameter -Wvariadic-macros -Wwrite-strings -Wswitch-default -Wswitch-enum -Wdeprecated-copy-dtor -Wunused-value -Wshadow)
+    # perf related
+    list(APPEND ARCHIE_ERROR_FLAGS -fno-omit-frame-pointer)
+    # security related
+    # TODO(rishin): Make fortify source level 2 work cmake
+    list(APPEND ARCHIE_ERROR_FLAGS -fPIE -fPIC -D_FORTIFY_SOURCE=1)
+endif()
+# TODO(rishin): add flags for Clang
+# TODO(rishin): add flags for VC++
+
+# Default miscellaneous settings
+find_program(CCACHE_FOUND ccache) # Integration with ccahe.
+if(CCACHE_FOUND)
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+endif(CCACHE_FOUND)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Integration with vim via ALE
+
+
+# === Source module helper functions =========================================
+
+function(archie_add_cxx_lib_dir lib_name lib_dir)
+    # add all files in the subdirectory
+    file(GLOB lib_srcs ${lib_dir}/*.cpp ${lib_dir}/*.cc)
+    list(FILTER lib_srcs EXCLUDE REGEX "^.*_test\\.(cpp|cc)$")
+    # make a dynamic library
+    add_library(${lib_name} SHARED ${lib_srcs})
+    target_compile_options(${lib_name} PRIVATE ${ARCHIE_ERROR_FLAGS})
+    target_include_directories(${lib_name} PRIVATE ${lib_dir})
+endfunction()
+
+function(archie_add_cxx_exec exec_name exec_file lib_dependencies)
+    add_executable(${exec_name} ${exec_file})
+    target_compile_options(${exec_name} PRIVATE ${ARCHIE_ERROR_FLAGS})
+    target_link_libraries(${exec_name} ${DEV_DEPENDENCIES} ${lib_dependencies})
+endfunction()
+
+include(FetchContent)
+set(FETCHCONTENT_QUIET OFF)
+
+FetchContent_Declare(
+  googletest
+  GIT_REPOSITORY    "https://github.com/google/googletest"
+  GIT_TAG           "release-1.8.0"
+  GIT_SHALLOW       ON
+)
+
+FetchContent_GetProperties(googletest)
+if(NOT googletest_POPULATED)
+    FetchContent_Populate(googletest)
+    # add the targets: gtest,gtest_main,gmock,gmock_main
+    add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
+
+include(CTest)
+
+function(archie_add_cxx_test_dir test_namespace test_dir lib_dependencies)
+    add_custom_target(${test_namespace})
+    # add all files in the subdirectory
+    file(GLOB test_srcs ${test_dir}/*.cpp ${test_dir}/*.cc)
+    list(FILTER test_srcs INCLUDE REGEX "^.*_test\\.(cpp|cc)$")
+    # make a dynamic library
+    foreach(file_path ${test_srcs})
+        # Strip file path to just file name.
+        get_filename_component(file_name_with_ext ${file_path} NAME)
+        get_filename_component(file_name ${file_name_with_ext} NAME_WE)
+        # Add the test target.
+        add_executable("${test_namespace}-${file_name}" EXCLUDE_FROM_ALL ${file_path})
+        add_dependencies(${test_namespace} "${test_namespace}-${file_name}")
+        target_link_libraries("${test_namespace}-${file_name}" PRIVATE gtest_main ${lib_dependencies})
+        add_test(NAME "${test_namespace}:${file_name}" COMMAND "${test_namespace}-${file_name}")
+    endforeach(file_path)
+endfunction()
+
+archie_add_cxx_lib_dir("{{namespaceCmake}}-{{project}}" ${CMAKE_CURRENT_SOURCE_DIR})
+#target_link_libraries("{{namespaceCmake}}-{{project}}" PRIVATE ${lib_dependencies})
+
+archie_add_cxx_test_dir("test-{{namespaceCmake}}-{{project}}" ${CMAKE_CURRENT_SOURCE_DIR} "{{namespaceCmake}}-{{project}}")

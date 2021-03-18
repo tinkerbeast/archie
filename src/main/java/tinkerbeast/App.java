@@ -32,8 +32,15 @@ public class App
     Map<String, String> convertForCmake() {
         Map<String, String> data = new HashMap<>(data_);
         String namespace = data.get("namespace");
-        namespace = namespace.replace('.', '-');
-        data.put("namespace", namespace);
+        data.put("namespaceCmake", namespace.replace('.', '-'));
+        return  data;
+    }
+
+    Map<String, String> convertForCpp() {
+        Map<String, String> data = new HashMap<>(data_);
+        String namespace = data.get("namespace");
+        data.put("cppNamespace", namespace.replace(".", "::"));
+        data.put("headerGuard", namespace.replace('.', '_').toUpperCase());
         return  data;
     }
 
@@ -42,6 +49,8 @@ public class App
             return data_;
         } else if (conversion.equals("cmake")) {
             return convertForCmake();
+        } else if (conversion.equals("cpp")) {
+            return convertForCpp();
         } else {
             throw new IllegalArgumentException("Conversion type not supported");
         }
