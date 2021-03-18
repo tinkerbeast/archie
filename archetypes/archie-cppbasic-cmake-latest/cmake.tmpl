@@ -45,17 +45,17 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Integration with vim via ALE
 function(archie_add_cxx_lib_dir lib_name lib_dir)
     # add all files in the subdirectory
     file(GLOB lib_srcs ${lib_dir}/*.cpp ${lib_dir}/*.cc)
-    list(FILTER lib_srcs EXCLUDE REGEX "^.*_test\\.(cpp|cc)$")
+    list(FILTER lib_srcs EXCLUDE REGEX "^.*test\\.(cpp|cc)$")
+    list(FILTER lib_srcs EXCLUDE REGEX "^.*main\\.(cpp|cc)$")
     # make a dynamic library
-    add_library(${lib_name} SHARED ${lib_srcs})
+    add_library(${lib_name} SHARED ${lib_srcs}) # TODO(rishin): Remove from all target
     target_compile_options(${lib_name} PRIVATE ${ARCHIE_ERROR_FLAGS})
-    target_include_directories(${lib_name} PRIVATE ${lib_dir})
+    target_include_directories(${lib_name} PRIVATE ${lib_dir}) # TODO(rishin): Test if subdirectory works with private
 endfunction()
 
-function(archie_add_cxx_exec exec_name exec_file lib_dependencies)
+function(archie_add_cxx_exec_file exec_name exec_file)
     add_executable(${exec_name} ${exec_file})
     target_compile_options(${exec_name} PRIVATE ${ARCHIE_ERROR_FLAGS})
-    target_link_libraries(${exec_name} ${DEV_DEPENDENCIES} ${lib_dependencies})
 endfunction()
 
 include(FetchContent)
@@ -81,7 +81,7 @@ function(archie_add_cxx_test_dir test_namespace test_dir lib_dependencies)
     add_custom_target(${test_namespace})
     # add all files in the subdirectory
     file(GLOB test_srcs ${test_dir}/*.cpp ${test_dir}/*.cc)
-    list(FILTER test_srcs INCLUDE REGEX "^.*_test\\.(cpp|cc)$")
+    list(FILTER test_srcs INCLUDE REGEX "^.*test\\.(cpp|cc)$")
     # make a dynamic library
     foreach(file_path ${test_srcs})
         # Strip file path to just file name.
@@ -99,3 +99,6 @@ archie_add_cxx_lib_dir("{{namespaceCmake}}-{{project}}" ${CMAKE_CURRENT_SOURCE_D
 #target_link_libraries("{{namespaceCmake}}-{{project}}" PRIVATE ${lib_dependencies})
 
 archie_add_cxx_test_dir("test-{{namespaceCmake}}-{{project}}" ${CMAKE_CURRENT_SOURCE_DIR} "{{namespaceCmake}}-{{project}}")
+
+archie_add_cxx_exec_file("{{namespaceCmake}}-{{project}}-main" ${CMAKE_CURRENT_SOURCE_DIR}/{{project}}_main.cpp)
+target_link_libraries("{{namespaceCmake}}-{{project}}-main" PRIVATE "{{namespaceCmake}}-{{project}}")

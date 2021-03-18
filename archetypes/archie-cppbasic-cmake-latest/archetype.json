@@ -2,6 +2,7 @@
   "files": [
     {"name": "{{project}}/{{project}}.cpp", "template": "cppfile.tmpl", "type": "file", "conversion": "cpp"},
     {"name": "{{project}}/{{project}}_test.cpp", "template": "cpptest.tmpl", "type": "file", "conversion": "cpp"},
+    {"name": "{{project}}/{{project}}_main.cpp", "template": "cppmain.tmpl", "type": "file", "conversion": "cpp"},
     {"name": "{{project}}/{{project}}.h", "template": "header.tmpl", "type": "file", "conversion": "cpp"},
     {"name": "{{project}}/CMakeLists.txt", "template": "cmake.tmpl", "type": "file", "conversion": "cmake"}
     ]
