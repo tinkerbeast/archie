@@ -26,6 +26,7 @@ public class App
     }
 
     private static final String ARCHETYPE_DESCRIPTOR_FILENAME = "archetype.json";
+    private static final String ARCHETYPE_DEFAULT_VERSION = "latest";
     private String archetype_;
     private Map<String, String> data_ = new HashMap<>();
 
@@ -95,24 +96,55 @@ public class App
         }
     }
     public void parseArguments(String[] args) throws ParseException {
-        // Command line options.
-        Option oNamespace = new Option("n", "namespace", true, "Namespace of the project");
-        oNamespace.setRequired(true);
-        Option oProject = new Option("p", "project", true, "Name of the project");
-        oProject.setRequired(true);
-        Option oArchetype = new Option("a", "archetype", true, "Archetype to generate from");
-        oArchetype.setRequired(true);
-        Option oArchetypeVersion = new Option("v", "archetype-version", true, "Archetype ver");
-        // Parse the options.
+        // Create the options.
         Options options = new Options();
-        options.addOption(oNamespace)
-                .addOption(oProject)
-                .addOption(oArchetype)
-                .addOption(oArchetypeVersion);
+        options.addOption(OptionBuilder.withLongOpt("namespace")
+                                .withDescription("Namespace of the project (required)")
+                                .hasArg()
+                                .withArgName("NAMESPACE")
+                                .isRequired()
+                                .create('n'));
+         options.addOption(OptionBuilder.withLongOpt("project")
+                                .withDescription("Name of the project (required)")
+                                .hasArg()
+                                .withArgName("PROJECT")
+                                .isRequired()
+                                .create('p'));
+         options.addOption(OptionBuilder.withLongOpt("archetype")
+                                .withDescription("Archetype to generate from (required)")
+                                .hasArg()
+                                .withArgName("ARCHETYPE")
+                                .isRequired()
+                                .create('a'));
+         options.addOption(OptionBuilder.withLongOpt("archetype-version")
+                                .withDescription("Archetype ver (default %s)".format(ARCHETYPE_DEFAULT_VERSION))
+                                .hasArg()
+                                .withArgName("ARCHETYPE-VERSION")
+                                .create('x'));
+         options.addOption(OptionBuilder.withLongOpt("help")
+                                .withDescription("Print help")
+                                .create('h'));
+        // Try to parse the command line
+        boolean printHelpAndExit = false;
         CommandLineParser parser = new DefaultParser();
-        CommandLine cmd = parser.parse( options, args);
+        CommandLine cmd = null;
+        try {
+            cmd = parser.parse(options, args);
+            printHelpAndExit = (cmd.getOptionValue('h') != null);
+        } catch (ParseException e) {
+            e.printStackTrace();
+            printHelpAndExit = true;
+        }
+        // Print help and exit if required
+        if (printHelpAndExit) {
+            String header = "Archetype generation system.\n\n";
+            String footer = "\nPlease report issues at https://github.com/tinkerbeast/archie";
+            HelpFormatter formatter = new HelpFormatter();
+            formatter.printHelp("archie", header, options, footer, true);
+            System.exit(1);
+        }
         // Form values from the options.
-        archetype_ = cmd.getOptionValue('a') + "-" + cmd.getOptionValue('v', "latest");
+        archetype_ = cmd.getOptionValue('a') + "-" + cmd.getOptionValue('x', ARCHETYPE_DEFAULT_VERSION);
         data_.put("namespace", cmd.getOptionValue("namespace"));
         data_.put("project", cmd.getOptionValue("project"));
     }
