@@ -1,7 +1,7 @@
 project({{namespaceCmake}}-{{project}}
     DESCRIPTION "A simple C++ project"
     LANGUAGES CXX)
-cmake_minimum_required(VERSION 3.12.4)
+cmake_minimum_required(VERSION 3.13.5)
 
 
 # === Define defaults ========================================================
@@ -36,8 +36,24 @@ endif()
 find_program(CCACHE_FOUND ccache) # Integration with ccahe.
 if(CCACHE_FOUND)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+    # ccache linking is disabled by default since it does not improve linking
+    # speed and meses with other caches
+    #set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
 endif(CCACHE_FOUND)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Integration with vim via ALE
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Needed for third-party tools like vim and mull
+
+# === Override defaults with options ========================================
+
+option(ARCHIE_COVERAGE "Enable coverage reporting" OFF)
+if(ARCHIE_COVERAGE) 
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang" AND CMAKE_BUILD_TYPE MATCHES "Debug")
+        # Debug option should set -O0 and -g flags necessary for coverage
+        # TODO(rishin): What if this changes in cmake in future?
+        message(STATUS "ARCHIE: Buildi with coverage enabled")
+    else()
+        message(FATAL_ERROR "ARCHIE: Conflicting build options with coverage enables")
+    endif()
+endif()
 
 
 # === Source module helper functions =========================================
@@ -51,6 +67,9 @@ function(archie_add_cxx_lib_dir lib_name lib_dir)
     add_library(${lib_name} SHARED ${lib_srcs}) # TODO(rishin): Remove from all target
     target_compile_options(${lib_name} PRIVATE ${ARCHIE_ERROR_FLAGS})
     target_include_directories(${lib_name} PRIVATE ${lib_dir}) # TODO(rishin): Test if subdirectory works with private
+    if(ARCHIE_COVERAGE)
+        target_compile_options(${lib_name} PRIVATE --coverage)
+    endif()
 endfunction()
 
 function(archie_add_cxx_exec_file exec_name exec_file)
@@ -91,9 +110,15 @@ function(archie_add_cxx_test_dir test_namespace test_dir lib_dependencies)
         add_executable("${test_namespace}-${file_name}" EXCLUDE_FROM_ALL ${file_path})
         add_dependencies(${test_namespace} "${test_namespace}-${file_name}")
         target_link_libraries("${test_namespace}-${file_name}" PRIVATE gtest_main ${lib_dependencies})
+        if(ARCHIE_COVERAGE)
+            target_link_options("${test_namespace}-${file_name}" PRIVATE --coverage)
+        endif()
         add_test(NAME "${test_namespace}:${file_name}" COMMAND "${test_namespace}-${file_name}")
     endforeach(file_path)
 endfunction()
+
+
+# === Adding individual libraries =============================================
 
 archie_add_cxx_lib_dir("{{namespaceCmake}}-{{project}}" ${CMAKE_CURRENT_SOURCE_DIR})
 #target_link_libraries("{{namespaceCmake}}-{{project}}" PRIVATE ${lib_dependencies})
