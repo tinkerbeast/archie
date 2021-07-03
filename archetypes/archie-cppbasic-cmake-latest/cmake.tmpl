@@ -46,10 +46,18 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Needed for third-party tools like vim an
 
 option(ARCHIE_COVERAGE "Enable coverage reporting" OFF)
 if(ARCHIE_COVERAGE) 
+    find_program(GCOV_PATH gcov)
+    find_program(LCOV_PATH NAMES lcov lcov.bat lcov.exe lcov.perl)
+    if(NOT GCOV_PATH)
+        message(FATAL_ERROR "ARCHIE: gcov not found")
+    endif()
+    if(NOT LCOV_PATH)
+        message(WARNING "ARCHIE: lcov is needed to run coverage target")
+    endif()
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang" AND CMAKE_BUILD_TYPE MATCHES "Debug")
         # Debug option should set -O0 and -g flags necessary for coverage
         # TODO(rishin): What if this changes in cmake in future?
-        message(STATUS "ARCHIE: Buildi with coverage enabled")
+        message(STATUS "ARCHIE: Building with coverage enabled")
     else()
         message(FATAL_ERROR "ARCHIE: Conflicting build options with coverage enables")
     endif()
@@ -69,6 +77,7 @@ function(archie_add_cxx_lib_dir lib_name lib_dir)
     target_include_directories(${lib_name} PRIVATE ${lib_dir}) # TODO(rishin): Test if subdirectory works with private
     if(ARCHIE_COVERAGE)
         target_compile_options(${lib_name} PRIVATE --coverage)
+        target_link_options("${lib_name}" PRIVATE --coverage)
     endif()
 endfunction()
 
@@ -110,13 +119,18 @@ function(archie_add_cxx_test_dir test_namespace test_dir lib_dependencies)
         add_executable("${test_namespace}-${file_name}" EXCLUDE_FROM_ALL ${file_path})
         add_dependencies(${test_namespace} "${test_namespace}-${file_name}")
         target_link_libraries("${test_namespace}-${file_name}" PRIVATE gtest_main ${lib_dependencies})
-        if(ARCHIE_COVERAGE)
-            target_link_options("${test_namespace}-${file_name}" PRIVATE --coverage)
-        endif()
         add_test(NAME "${test_namespace}:${file_name}" COMMAND "${test_namespace}-${file_name}")
     endforeach(file_path)
 endfunction()
 
+if(ARCHIE_COVERAGE AND LCOV_PATH)
+    add_custom_command(OUTPUT coverage.info
+            COMMAND lcov --directory ${CMAKE_CURRENT_BINARY_DIR} --capture --output-file coverage.info
+            COMMAND lcov --remove coverage.info '/usr/*' --output-file coverage.info
+            COMMAND lcov --list coverage.info
+        )
+    add_custom_target(coverage DEPENDS coverage.info)
+endif()
 
 # === Adding individual libraries =============================================
 
