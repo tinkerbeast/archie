@@ -64,6 +64,12 @@ if(ARCHIE_COVERAGE)
 endif()
 
 
+# === Default includes =======================================================
+
+include(FetchContent)
+set(FETCHCONTENT_QUIET OFF)
+
+
 # === Source module helper functions =========================================
 
 function(archie_add_cxx_lib_dir lib_name lib_dir)
@@ -86,42 +92,42 @@ function(archie_add_cxx_exec_file exec_name exec_file)
     target_compile_options(${exec_name} PRIVATE ${ARCHIE_ERROR_FLAGS})
 endfunction()
 
-include(FetchContent)
-set(FETCHCONTENT_QUIET OFF)
 
-FetchContent_Declare(
-  googletest
-  GIT_REPOSITORY    "https://github.com/google/googletest"
-  GIT_TAG           "release-1.8.0"
-  GIT_SHALLOW       ON
-)
+if(BUILD_TESTING)
+    FetchContent_Declare(
+      googletest
+      GIT_REPOSITORY    "https://github.com/google/googletest"
+      GIT_TAG           "release-1.8.0"
+      GIT_SHALLOW       ON
+    )
 
-FetchContent_GetProperties(googletest)
-if(NOT googletest_POPULATED)
-    FetchContent_Populate(googletest)
-    # add the targets: gtest,gtest_main,gmock,gmock_main
-    add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR} EXCLUDE_FROM_ALL)
+    FetchContent_GetProperties(googletest)
+    if(NOT googletest_POPULATED)
+        FetchContent_Populate(googletest)
+        # add the targets: gtest,gtest_main,gmock,gmock_main
+        add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR} EXCLUDE_FROM_ALL)
+    endif()
+
+    include(CTest)
+
+    function(archie_add_cxx_test_dir test_namespace test_dir lib_dependencies)
+        add_custom_target(${test_namespace})
+        # add all files in the subdirectory
+        file(GLOB test_srcs ${test_dir}/*.cpp ${test_dir}/*.cc)
+        list(FILTER test_srcs INCLUDE REGEX "^.*test\\.(cpp|cc)$")
+        # make a dynamic library
+        foreach(file_path ${test_srcs})
+            # Strip file path to just file name.
+            get_filename_component(file_name_with_ext ${file_path} NAME)
+            get_filename_component(file_name ${file_name_with_ext} NAME_WE)
+            # Add the test target.
+            add_executable("${test_namespace}-${file_name}" EXCLUDE_FROM_ALL ${file_path})
+            add_dependencies(${test_namespace} "${test_namespace}-${file_name}")
+            target_link_libraries("${test_namespace}-${file_name}" PRIVATE gtest_main ${lib_dependencies})
+            add_test(NAME "${test_namespace}:${file_name}" COMMAND "${test_namespace}-${file_name}")
+        endforeach(file_path)
+    endfunction()
 endif()
-
-include(CTest)
-
-function(archie_add_cxx_test_dir test_namespace test_dir lib_dependencies)
-    add_custom_target(${test_namespace})
-    # add all files in the subdirectory
-    file(GLOB test_srcs ${test_dir}/*.cpp ${test_dir}/*.cc)
-    list(FILTER test_srcs INCLUDE REGEX "^.*test\\.(cpp|cc)$")
-    # make a dynamic library
-    foreach(file_path ${test_srcs})
-        # Strip file path to just file name.
-        get_filename_component(file_name_with_ext ${file_path} NAME)
-        get_filename_component(file_name ${file_name_with_ext} NAME_WE)
-        # Add the test target.
-        add_executable("${test_namespace}-${file_name}" EXCLUDE_FROM_ALL ${file_path})
-        add_dependencies(${test_namespace} "${test_namespace}-${file_name}")
-        target_link_libraries("${test_namespace}-${file_name}" PRIVATE gtest_main ${lib_dependencies})
-        add_test(NAME "${test_namespace}:${file_name}" COMMAND "${test_namespace}-${file_name}")
-    endforeach(file_path)
-endfunction()
 
 if(ARCHIE_COVERAGE AND LCOV_PATH)
     add_custom_command(OUTPUT coverage.info
@@ -132,12 +138,15 @@ if(ARCHIE_COVERAGE AND LCOV_PATH)
     add_custom_target(coverage DEPENDS coverage.info)
 endif()
 
+
 # === Adding individual libraries =============================================
 
 archie_add_cxx_lib_dir("{{namespaceCmake}}-{{project}}" ${CMAKE_CURRENT_SOURCE_DIR})
 #target_link_libraries("{{namespaceCmake}}-{{project}}" PRIVATE ${lib_dependencies})
 
-archie_add_cxx_test_dir("test-{{namespaceCmake}}-{{project}}" ${CMAKE_CURRENT_SOURCE_DIR} "{{namespaceCmake}}-{{project}}")
+if(BUILD_TESTING)
+    archie_add_cxx_test_dir("test-{{namespaceCmake}}-{{project}}" ${CMAKE_CURRENT_SOURCE_DIR} "{{namespaceCmake}}-{{project}}")
+endif()
 
 archie_add_cxx_exec_file("{{namespaceCmake}}-{{project}}-main" ${CMAKE_CURRENT_SOURCE_DIR}/{{project}}_main.cpp)
 target_link_libraries("{{namespaceCmake}}-{{project}}-main" PRIVATE "{{namespaceCmake}}-{{project}}")
