@@ -1,0 +1,6 @@
+{
+  "files": [
+    {"name": "cmake-defaults", "template": "cmake-defaults-latest.cmake", "type": "none", "conversion": "cmake"},
+    {"name": "cmake-builds", "template": "cmake-builds-latest.cmake", "type": "none", "conversion": "cmake"}
+    ]
+}

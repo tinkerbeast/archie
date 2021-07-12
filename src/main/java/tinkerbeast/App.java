@@ -7,6 +7,7 @@ import com.github.mustachejava.*;
 import org.apache.commons.cli.*;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +43,7 @@ public class App
         String namespace = data.get("namespace");
         data.put("cppNamespace", namespace.replace(".", "::"));
         data.put("headerGuard", namespace.replace('.', '_').toUpperCase());
-        return  data;
+        return data;
     }
 
     Map<String, String> convertData(String conversion) {
@@ -54,6 +55,21 @@ public class App
             return convertForCpp();
         } else {
             throw new IllegalArgumentException("Conversion type not supported");
+        }
+    }
+
+    void createResourceMap() throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        InputStream descriptor = getClass().getClassLoader()
+            .getResourceAsStream("archie-resources" + File.separator + ARCHETYPE_DESCRIPTOR_FILENAME);
+        JsonNode jsonMap = mapper.readValue(descriptor, JsonNode.class);
+        JsonNode fileNode = jsonMap.get("files");
+        List<FileTemplate> files = mapper.convertValue(fileNode, new TypeReference<List<FileTemplate>>() {});
+        for (FileTemplate fl : files) {
+            String resourcePath = "archie-resources" + File.separator + fl.template;
+            InputStream resource = getClass().getClassLoader().getResourceAsStream(resourcePath);
+            data_.put("resource-" + fl.name, 
+                    new String(resource.readAllBytes(), StandardCharsets.UTF_8));
         }
     }
 
@@ -73,9 +89,9 @@ public class App
     }
 
     void generateArchetype() {
+        ObjectMapper mapper = new ObjectMapper();
         InputStream descriptor = getClass().getClassLoader()
             .getResourceAsStream(archetype_ + File.separator + ARCHETYPE_DESCRIPTOR_FILENAME);
-        ObjectMapper mapper = new ObjectMapper();
         try {
             JsonNode jsonMap = mapper.readValue(descriptor, JsonNode.class);
             JsonNode fileNode = jsonMap.get("files");
@@ -95,6 +111,7 @@ public class App
             e.printStackTrace();
         }
     }
+
     public void parseArguments(String[] args) throws ParseException {
         // Create the options.
         Options options = new Options();
@@ -152,6 +169,7 @@ public class App
     public static void main( String[] args ) throws Exception {
         App xxx = new App();
         xxx.parseArguments(args);
+        xxx.createResourceMap();
         xxx.generateArchetype();
     }
 }
