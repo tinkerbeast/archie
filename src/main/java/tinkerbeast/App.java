@@ -34,7 +34,7 @@ public class App
     private void populateData() {
         String namespace = data_.get("namespace");
         // for cpp
-        data_.put("cppNamespace", namespace.replace(".", "::"));
+        data_.put("cppNamespace", namespace.replace(".", "_"));
         data_.put("cppHeaderGuard", namespace.replace('.', '_').toUpperCase());
         conversions_.add("cpp");
         // for cmake
