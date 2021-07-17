@@ -1,4 +1,4 @@
-project({{namespaceCmake}}-{{project}}
+project({{cmakeNamespace}}-{{project}}
     DESCRIPTION "A simple C++ project"
     LANGUAGES CXX)
 cmake_minimum_required(VERSION 3.13.5)
@@ -12,12 +12,12 @@ cmake_minimum_required(VERSION 3.13.5)
 
 # === Adding individual libraries =============================================
 
-archie_add_cxx_lib_dir("{{namespaceCmake}}-{{project}}" ${CMAKE_CURRENT_SOURCE_DIR})
-#target_link_libraries("{{namespaceCmake}}-{{project}}" PRIVATE ${lib_dependencies})
+archie_add_cxx_lib_dir("{{cmakeNamespace}}-{{project}}" ${CMAKE_CURRENT_SOURCE_DIR})
+#target_link_libraries("{{cmakeNamespace}}-{{project}}" PRIVATE ${lib_dependencies})
 
 if(BUILD_TESTING)
-    archie_add_cxx_test_dir("test-{{namespaceCmake}}-{{project}}" ${CMAKE_CURRENT_SOURCE_DIR} "{{namespaceCmake}}-{{project}}")
+    archie_add_cxx_test_dir("test-{{cmakeNamespace}}-{{project}}" ${CMAKE_CURRENT_SOURCE_DIR} "{{cmakeNamespace}}-{{project}}")
 endif()
 
-archie_add_cxx_exec_file("{{namespaceCmake}}-{{project}}-main" ${CMAKE_CURRENT_SOURCE_DIR}/{{project}}_main.cpp)
-target_link_libraries("{{namespaceCmake}}-{{project}}-main" PRIVATE "{{namespaceCmake}}-{{project}}")
+archie_add_cxx_exec_file("{{cmakeNamespace}}-{{project}}-main" ${CMAKE_CURRENT_SOURCE_DIR}/{{project}}_main.cpp)
+target_link_libraries("{{cmakeNamespace}}-{{project}}-main" PRIVATE "{{cmakeNamespace}}-{{project}}")

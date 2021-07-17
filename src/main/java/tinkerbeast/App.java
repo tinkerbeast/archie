@@ -8,16 +8,14 @@ import org.apache.commons.cli.*;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 /**
  * Hello world!
  *
  */
-public class App 
+public class App
 {
     static class FileTemplate {
         public String name;
@@ -30,35 +28,21 @@ public class App
     private static final String ARCHETYPE_DEFAULT_VERSION = "latest";
     private String archetype_;
     private Map<String, String> data_ = new HashMap<>();
+    private Set<String> conversions_ = new HashSet<>();
 
-    Map<String, String> convertForCmake() {
-        Map<String, String> data = new HashMap<>(data_);
-        String namespace = data.get("namespace");
-        data.put("namespaceCmake", namespace.replace('.', '-'));
-        return  data;
+
+    private void populateData() {
+        String namespace = data_.get("namespace");
+        // for cpp
+        data_.put("cppNamespace", namespace.replace(".", "::"));
+        data_.put("cppHeaderGuard", namespace.replace('.', '_').toUpperCase());
+        conversions_.add("cpp");
+        // for cmake
+        data_.put("cmakeNamespace", namespace.replace('.', '-'));
+        conversions_.add("cmake");
     }
 
-    Map<String, String> convertForCpp() {
-        Map<String, String> data = new HashMap<>(data_);
-        String namespace = data.get("namespace");
-        data.put("cppNamespace", namespace.replace(".", "::"));
-        data.put("headerGuard", namespace.replace('.', '_').toUpperCase());
-        return data;
-    }
-
-    Map<String, String> convertData(String conversion) {
-        if (conversion == null) {
-            return data_;
-        } else if (conversion.equals("cmake")) {
-            return convertForCmake();
-        } else if (conversion.equals("cpp")) {
-            return convertForCpp();
-        } else {
-            throw new IllegalArgumentException("Conversion type not supported");
-        }
-    }
-
-    void createResourceMap() throws IOException {
+    private void createResourceMap() throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         InputStream descriptor = getClass().getClassLoader()
             .getResourceAsStream("archie-resources" + File.separator + ARCHETYPE_DESCRIPTOR_FILENAME);
@@ -68,27 +52,27 @@ public class App
         for (FileTemplate fl : files) {
             String resourcePath = "archie-resources" + File.separator + fl.template;
             InputStream resource = getClass().getClassLoader().getResourceAsStream(resourcePath);
-            data_.put("resource-" + fl.name, 
+            data_.put("resource-" + fl.name,
                     new String(resource.readAllBytes(), StandardCharsets.UTF_8));
         }
     }
 
-    void generateFile(String fileNameTemplate, String fileTemplate, Map<String, String> data) throws IOException {
+    private void generateFile(String fileNameTemplate, String fileTemplate) throws IOException {
         MustacheFactory mf = new DefaultMustacheFactory();
         // Create the file name.
         StringWriter writer = new StringWriter();
         Mustache fileName = mf.compile(new StringReader(fileNameTemplate), fileNameTemplate);
-        fileName.execute(writer, data).flush();
+        fileName.execute(writer, data_).flush();
         // Create the file and directory.
         File file = new File(writer.toString());
         file.getParentFile().mkdirs();
         file.createNewFile();
         // Populate the file.
         Mustache fileContents = mf.compile(archetype_ + File.separator + fileTemplate);
-        fileContents.execute(new FileWriter(file), data).flush();
+        fileContents.execute(new FileWriter(file), data_).flush();
     }
 
-    void generateArchetype() {
+    private void generateArchetype() {
         ObjectMapper mapper = new ObjectMapper();
         InputStream descriptor = getClass().getClassLoader()
             .getResourceAsStream(archetype_ + File.separator + ARCHETYPE_DESCRIPTOR_FILENAME);
@@ -98,13 +82,11 @@ public class App
             List<FileTemplate> files = mapper.convertValue(fileNode, new TypeReference<List<FileTemplate>>() {});
             for (FileTemplate fl : files) {
                 // TODO(rishin): proper logging.
-                System.out.format("%s %s %s %s %n",
-                        fl.name, fl.template,
-                        fl.type, fl.conversion);
-                if (fl.type.equals("file")) {
-                    generateFile(fl.name, fl.template, convertData(fl.conversion));
+                System.out.format("%s %s %s %s %n", fl.name, fl.template, fl.type, fl.conversion);
+                if (fl.type.equals("file") && conversions_.contains(fl.conversion)) {
+                    generateFile(fl.name, fl.template);
                 } else {
-                    throw new IllegalArgumentException("Template type not supported");
+                    throw new IllegalArgumentException("Template type or conversion not supported");
                 }
             }
         } catch (IOException e) {
@@ -169,6 +151,7 @@ public class App
     public static void main( String[] args ) throws Exception {
         App xxx = new App();
         xxx.parseArguments(args);
+        xxx.populateData();
         xxx.createResourceMap();
         xxx.generateArchetype();
     }
