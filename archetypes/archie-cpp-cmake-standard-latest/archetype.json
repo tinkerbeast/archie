@@ -1,0 +1,9 @@
+{
+  "files": [
+    {"name": "{{cmakeNamespace}}-{{projectLower}}/src/{{projectLower}}.cpp", "template": "cppfile.tmpl", "type": "file", "conversion": "cpp"},
+    {"name": "{{cmakeNamespace}}-{{projectLower}}/test/{{projectLower}}_test.cpp", "template": "cpptest.tmpl", "type": "file", "conversion": "cpp"},
+    {"name": "{{cmakeNamespace}}-{{projectLower}}/src/{{projectLower}}_main.cpp", "template": "cppmain.tmpl", "type": "file", "conversion": "cpp"},
+    {"name": "{{cmakeNamespace}}-{{projectLower}}/include/{{cmakeNamespace}}/{{projectLower}}.h", "template": "header.tmpl", "type": "file", "conversion": "cpp"},
+    {"name": "{{cmakeNamespace}}-{{projectLower}}/CMakeLists.txt", "template": "cmake.tmpl", "type": "file", "conversion": "cmake"}
+    ]
+}

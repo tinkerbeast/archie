@@ -1,0 +1,9 @@
+#include "{{cmakeNamespace}}/{{project}}.h"
+
+#include <iostream>
+
+int main() {
+    {{cppNamespace}}::{{project}} obj;
+    std::cout << "2 + 3 = " << obj.add(2, 3) << std::endl;
+    return EXIT_SUCCESS;
+}

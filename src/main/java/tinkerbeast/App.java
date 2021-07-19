@@ -34,6 +34,9 @@ public class App
     private void populateData() {
         String namespace = data_.get("namespace");
         String project = data_.get("project");
+        // for all
+        data_.put("projectLower", project.toLowerCase());
+        conversions_.add("none");
         // for cpp
         data_.put("cppNamespace", namespace.replace(".", "_"));
         data_.put("cppHeaderGuard", 

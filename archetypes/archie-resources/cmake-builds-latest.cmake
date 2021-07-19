@@ -28,30 +28,105 @@ if(ARCHIE_COVERAGE AND LCOV_PATH)
     add_custom_target(coverage DEPENDS coverage.info)
 endif()
 
-# === Library and executable build ===========================================
 
-function(archie_add_cxx_lib_dir lib_name lib_dir)
-    # add all files in the subdirectory
-    file(GLOB lib_srcs ${lib_dir}/*.cpp ${lib_dir}/*.cc)
-    list(FILTER lib_srcs EXCLUDE REGEX "^.*test\\.(cpp|cc)$")
-    list(FILTER lib_srcs EXCLUDE REGEX "^.*main\\.(cpp|cc)$")
-    # make a dynamic library
-    add_library(${lib_name} SHARED ${lib_srcs}) # TODO(rishin): Remove from all target
-    target_compile_options(${lib_name} PRIVATE ${ARCHIE_ERROR_FLAGS})
-    target_include_directories(${lib_name} PRIVATE ${lib_dir}) # TODO(rishin): Test if subdirectory works with private
-    if(ARCHIE_COVERAGE)
-        target_compile_options(${lib_name} PRIVATE --coverage)
-        target_link_options("${lib_name}" PRIVATE --coverage)
+# === Build functions ========================================================
+
+macro(archie_cxx_deps_segregate shared_libs interface_libs)
+  # TODO: remove this print
+  #message(STATUS "shared_libs=${shared_libs} interface_libs=${interface_libs} deps_public=${ARGN}")
+  set(deps_public ${ARGN})
+  # Check whether a shared library is shared or interface
+  set(${shared_libs} )
+  set(${interface_libs} )
+  foreach(dep ${deps_public})
+    get_target_property(dep_type dep)
+    if(dep_type STREQUAL "SHARED_LIBRARY")
+      list(APPEND ${shared_libs} dep)
+    elseif(dep_type STREQUAL "INTERFACE_LIBRARY")
+      list(APPEND ${interface_libs} dep)
+    else()
+      message(FATAL_ERROR "${dep} needs to be shared or header libraries")
     endif()
+  endforeach(dep)
+endmacro()
+
+# cc_shared_library(namespace target
+#                   SRCS ...
+#                   INCL_PRIV ...
+#                   INCL_PUBL ...
+#                   DEPS_PRIV ...
+#                   DEPS_PUBL ...
+# )
+function(archie_cxx_library_shared namespace target)
+  # See: https://cmake.org/cmake/help/latest/command/cmake_parse_arguments.html
+  set(multiValueArgs SRCS INCL_PRIV INCL_PUBL DEPS_PRIV DEPS_PUBL)
+  cmake_parse_arguments(ARCHIE_CXX_LIB "" "" "${multiValueArgs}" ${ARGN} )
+  # Make shared library target
+  if(NOT ARCHIE_CXX_LIB_SRCS)
+    message(FATAL_ERROR "archie_cxx_shared_library needs SRCS parameters")
+  endif()
+  set(lib_name "${namespace}-${target}")
+  add_library(${lib_name} SHARED ${ARCHIE_CXX_LIB_SRCS})
+  target_compile_options(${lib_name} PRIVATE ${ARCHIE_ERROR_FLAGS})
+  # Coverage related flags
+  if(ARCHIE_COVERAGE)
+    target_compile_options(${lib_name} PRIVATE --coverage)
+    target_link_options("${lib_name}" PRIVATE --coverage)
+  endif()
+  # Add include directories
+  if(ARCHIE_CXX_LIB_INCL_PRIV)
+    target_include_directories(${lib_name} PRIVATE ${ARCHIE_CXX_LIB_INCL_PRIV})
+  endif()
+  if(ARCHIE_CXX_LIB_INCL_PUBL)
+    target_include_directories(${lib_name} PUBLIC ${ARCHIE_CXX_LIB_INCL_PUBL})
+  endif()
+  # Add private dependencies
+  if(ARCHIE_CXX_LIB_DEPS_PRIV)
+    target_link_libraries(${lib_name} PRIVATE ${ARCHIE_CXX_LIB_DEPS_PRIV})
+  endif()
+  # Add public dependencies
+  archie_cxx_deps_segregate(shared_libs interface_libs ${ARCHIE_CXX_LIB_DEPS_PUBL})
+  if(shared_libs)
+    target_link_libraries(${lib_name} PUBLIC ${shared_libs})
+  endif()
+  if(interface_libs)
+    target_link_libraries(${lib_name} INTERFACE ${interface_libs})
+  endif()
+  # Alias the library to have a namespace
+  add_library(${namespace}::${target} ALIAS ${lib_name})
 endfunction()
 
-function(archie_add_cxx_exec_file exec_name exec_file)
-    add_executable(${exec_name} ${exec_file})
-    target_compile_options(${exec_name} PRIVATE ${ARCHIE_ERROR_FLAGS})
+
+function(archie_cxx_executable namespace target)
+  # See: https://cmake.org/cmake/help/latest/command/cmake_parse_arguments.html
+  set(options EXCLUDE_FROM_ALL)
+  set(multiValueArgs SRCS DEPS_PRIV DEPS_PUBL)
+  cmake_parse_arguments(ARCHIE_CXX_EXE "${options}" "" "${multiValueArgs}" ${ARGN} )
+  # Make executable target
+  if(NOT ARCHIE_CXX_EXE_SRCS)
+    message(FATAL_ERROR "archie_cxx_executable needs SRCS parameter")
+  endif()
+  set(exec_name "${namespace}-${target}")
+  if(NOT ARCHIE_CXX_EXE_EXCLUDE_FROM_ALL)
+    add_executable(${exec_name} ${ARCHIE_CXX_EXE_SRCS})
+  else()
+    add_executable(${exec_name} EXCLUDE_FROM_ALL ${ARCHIE_CXX_EXE_SRCS})
+  endif()
+  target_compile_options(${exec_name} PRIVATE ${ARCHIE_ERROR_FLAGS})
+  # Add private dependencies
+  if(ARCHIE_CXX_EXE_DEPS_PRIV)
+    target_link_libraries(${exec_name} PRIVATE ${ARCHIE_CXX_EXE_DEPS_PRIV})
+  endif()
+  # Add public dependencies
+  archie_cxx_deps_segregate(shared_libs interface_libs ${ARCHIE_CXX_EXE_DEPS_PUBL})
+  if(shared_libs)
+    target_link_libraries(${exec_name} PUBLIC ${shared_libs})
+  endif()
+  if(interface_libs)
+    target_link_libraries(${exec_name} INTERFACE ${interface_libs})
+  endif()
 endfunction()
-
-# === Unit tests build =======================================================
-
+  
 if(BUILD_TESTING)
     FetchContent_Declare(
       googletest
@@ -68,22 +143,18 @@ if(BUILD_TESTING)
     endif()
 
     include(CTest)
+endif()
 
-    function(archie_add_cxx_test_dir test_namespace test_dir lib_dependencies)
-        add_custom_target(${test_namespace})
-        # add all files in the subdirectory
-        file(GLOB test_srcs ${test_dir}/*.cpp ${test_dir}/*.cc)
-        list(FILTER test_srcs INCLUDE REGEX "^.*test\\.(cpp|cc)$")
-        # make a dynamic library
-        foreach(file_path ${test_srcs})
-            # Strip file path to just file name.
-            get_filename_component(file_name_with_ext ${file_path} NAME)
-            get_filename_component(file_name ${file_name_with_ext} NAME_WE)
-            # Add the test target.
-            add_executable("${test_namespace}-${file_name}" EXCLUDE_FROM_ALL ${file_path})
-            add_dependencies(${test_namespace} "${test_namespace}-${file_name}")
-            target_link_libraries("${test_namespace}-${file_name}" PRIVATE gtest_main ${lib_dependencies})
-            add_test(NAME "${test_namespace}:${file_name}" COMMAND "${test_namespace}-${file_name}")
-        endforeach(file_path)
-    endfunction()
+if(BUILD_TESTING)
+    
+  function(archie_cxx_test namespace target)
+    if(NOT TARGET test-build)
+        add_custom_target(test-build)
+    endif()
+    archie_cxx_executable(${namespace} ${target} EXCLUDE_FROM_ALL ${ARGN})
+    target_link_libraries("${namespace}-${target}" PRIVATE gtest_main)
+    add_dependencies(test-build "${namespace}-${target}")
+    add_test(NAME "${namespace}:${target}" COMMAND "${namespace}-${target}")
+  endfunction()
+
 endif()
