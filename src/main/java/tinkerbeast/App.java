@@ -102,33 +102,38 @@ public class App
     public void parseArguments(String[] args) throws ParseException {
         // Create the options.
         Options options = new Options();
-        options.addOption(OptionBuilder.withLongOpt("namespace")
-                                .withDescription("Namespace of the project (required)")
+        options.addOption(Option.builder("n")
+                                .desc("Namespace of the project (required)")
                                 .hasArg()
-                                .withArgName("NAMESPACE")
-                                .isRequired()
-                                .create('n'));
-         options.addOption(OptionBuilder.withLongOpt("project")
-                                .withDescription("Name of the project (required)")
+                                .argName("NAMESPACE")
+                                .required()
+                                .longOpt("namespace")
+                                .build());
+         options.addOption(Option.builder("p")
+                                .desc("Name of the project (required)")
                                 .hasArg()
-                                .withArgName("PROJECT")
-                                .isRequired()
-                                .create('p'));
-         options.addOption(OptionBuilder.withLongOpt("archetype")
-                                .withDescription("Archetype to generate from (required)")
+                                .argName("PROJECT")
+                                .required()
+                                .longOpt("project")
+                                .build());
+         options.addOption(Option.builder("a")
+                                .desc("Archetype to generate from (required)")
                                 .hasArg()
-                                .withArgName("ARCHETYPE")
-                                .isRequired()
-                                .create('a'));
-         options.addOption(OptionBuilder.withLongOpt("archetype-version")
-                                .withDescription("Archetype ver (default %s)".format(ARCHETYPE_DEFAULT_VERSION))
+                                .argName("ARCHETYPE")
+                                .required()
+                                .longOpt("archetype")
+                                .build());
+         options.addOption(Option.builder("x")
+                                .desc(String.format("Archetype ver (default %s)", ARCHETYPE_DEFAULT_VERSION))
                                 .hasArg()
-                                .withArgName("ARCHETYPE-VERSION")
-                                .create('x'));
-         options.addOption(OptionBuilder.withLongOpt("help")
-                                .withDescription("Print help")
-                                .create('h'));
-        // Try to parse the command line
+                                .argName("ARCHETYPE-VERSION")
+                                .longOpt("archetype-version")
+                                .build());
+         options.addOption(Option.builder("h")
+                                .desc("Print help")
+                                .longOpt("help")
+                                .build());
+        // Try to parse the command line.
         boolean printHelpAndExit = false;
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = null;
@@ -139,7 +144,7 @@ public class App
             e.printStackTrace();
             printHelpAndExit = true;
         }
-        // Print help and exit if required
+        // Print help and exit if required.
         if (printHelpAndExit) {
             String header = "Archetype generation system.\n\n";
             String footer = "\nPlease report issues at https://github.com/tinkerbeast/archie";
@@ -154,10 +159,10 @@ public class App
     }
 
     public static void main( String[] args ) throws Exception {
-        App xxx = new App();
-        xxx.parseArguments(args);
-        xxx.populateData();
-        xxx.createResourceMap();
-        xxx.generateArchetype();
+        App app = new App();
+        app.parseArguments(args);
+        app.populateData();
+        app.createResourceMap();
+        app.generateArchetype();
     }
 }
