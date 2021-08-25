@@ -154,6 +154,7 @@ public class App
         }
         // Form values from the options.
         archetype_ = cmd.getOptionValue('a') + "-" + cmd.getOptionValue('x', ARCHETYPE_DEFAULT_VERSION);
+        data_.put("archetype", archetype_);
         data_.put("namespace", cmd.getOptionValue("namespace"));
         data_.put("project", cmd.getOptionValue("project"));
     }
