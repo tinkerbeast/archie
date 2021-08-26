@@ -21,14 +21,12 @@ public class App
         public String name;
         public String template;
         public String type;
-        public String conversion;
     }
 
     private static final String ARCHETYPE_DESCRIPTOR_FILENAME = "archetype.json";
     private static final String ARCHETYPE_DEFAULT_VERSION = "latest";
     private String archetype_;
     private Map<String, String> data_ = new HashMap<>();
-    private Set<String> conversions_ = new HashSet<>();
 
 
     private void populateData() {
@@ -36,15 +34,12 @@ public class App
         String project = data_.get("project");
         // for all
         data_.put("projectLower", project.toLowerCase());
-        conversions_.add("none");
         // for cpp
         data_.put("cppNamespace", namespace.replace(".", "_"));
         data_.put("cppHeaderGuard", 
                 namespace.replace('.', '_').toUpperCase() + "_" + project.toUpperCase());
-        conversions_.add("cpp");
         // for cmake
         data_.put("cmakeNamespace", namespace.replace('.', '-'));
-        conversions_.add("cmake");
     }
 
     private void createResourceMap() throws IOException {
@@ -87,8 +82,8 @@ public class App
             List<FileTemplate> files = mapper.convertValue(fileNode, new TypeReference<List<FileTemplate>>() {});
             for (FileTemplate fl : files) {
                 // TODO(rishin): proper logging.
-                System.out.format("%s %s %s %s %n", fl.name, fl.template, fl.type, fl.conversion);
-                if (fl.type.equals("file") && conversions_.contains(fl.conversion)) {
+                System.out.format("%s %s %s %n", fl.name, fl.template, fl.type);
+                if (fl.type.equals("template")) {
                     generateFile(fl.name, fl.template);
                 } else {
                     throw new IllegalArgumentException("Template type or conversion not supported");

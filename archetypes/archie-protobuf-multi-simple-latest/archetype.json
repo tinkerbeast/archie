@@ -1,7 +1,7 @@
 {
     "files": [
-        {"name": "{{project}}/{{project}}.proto", "template": "proto.tmpl", "type": "file", "conversion": "cpp"},
-        {"name": "{{project}}/CMakeLists.txt", "template": "cmake.tmpl", "type": "file", "conversion": "cmake"},
-        {"name": "{{project}}/build.gradle", "template": "gradle.tmpl", "type": "file", "conversion": "cpp"}
+        {"name": "{{project}}/{{project}}.proto", "template": "proto.tmpl", "type": "template"},
+        {"name": "{{project}}/CMakeLists.txt", "template": "cmake.tmpl", "type": "template"},
+        {"name": "{{project}}/build.gradle", "template": "gradle.tmpl", "type": "template"}
     ]
 }
