@@ -9,6 +9,7 @@ import org.apache.commons.cli.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.text.SimpleDateFormat;
 
 
 /**
@@ -40,6 +41,9 @@ public class App
                 namespace.replace('.', '_').toUpperCase() + "_" + project.toUpperCase());
         // for cmake
         data_.put("cmakeNamespace", namespace.replace('.', '-'));
+        // data time
+        String year = new SimpleDateFormat("yyyy").format(new Date());
+        data_.put("time-year", year); 
     }
 
     private void createResourceMap() throws IOException {
@@ -51,13 +55,25 @@ public class App
         List<FileTemplate> files = mapper.convertValue(fileNode, new TypeReference<List<FileTemplate>>() {});
         for (FileTemplate fl : files) {
             String resourcePath = "archie-resources" + File.separator + fl.template;
-            InputStream resource = getClass().getClassLoader().getResourceAsStream(resourcePath);
-            data_.put("resource-" + fl.name,
-                    new String(resource.readAllBytes(), StandardCharsets.UTF_8));
+            if (fl.type.equals("template")) {
+                StringWriter writer = new StringWriter();
+                generateFile(resourcePath, writer);
+                data_.put("resource-" + fl.name, writer.toString());
+            } else { // TODO: handle none type
+                InputStream resource = getClass().getClassLoader().getResourceAsStream(resourcePath);
+                data_.put("resource-" + fl.name,
+                        new String(resource.readAllBytes(), StandardCharsets.UTF_8));
+            }
         }
     }
 
-    private void generateFile(String fileNameTemplate, String fileTemplate) throws IOException {
+    private void generateFile(String resourceName, Writer out) throws IOException {
+        MustacheFactory mf = new DefaultMustacheFactory();
+        Mustache fileContents = mf.compile(resourceName);
+        fileContents.execute(out, data_).flush();
+    }
+
+    private File fileNameTemplateToFile(String fileNameTemplate) throws IOException {
         MustacheFactory mf = new DefaultMustacheFactory();
         // Create the file name.
         StringWriter writer = new StringWriter();
@@ -65,11 +81,7 @@ public class App
         fileName.execute(writer, data_).flush();
         // Create the file and directory.
         File file = new File(writer.toString());
-        file.getParentFile().mkdirs();
-        file.createNewFile();
-        // Populate the file.
-        Mustache fileContents = mf.compile(archetype_ + File.separator + fileTemplate);
-        fileContents.execute(new FileWriter(file), data_).flush();
+        return file;
     }
 
     private void generateArchetype() {
@@ -82,9 +94,20 @@ public class App
             List<FileTemplate> files = mapper.convertValue(fileNode, new TypeReference<List<FileTemplate>>() {});
             for (FileTemplate fl : files) {
                 // TODO(rishin): proper logging.
-                System.out.format("%s %s %s %n", fl.name, fl.template, fl.type);
+                File file = fileNameTemplateToFile(fl.name);
+                System.out.format("%s %s %s %n", file.toString(), fl.template, fl.type);
                 if (fl.type.equals("template")) {
-                    generateFile(fl.name, fl.template);
+                    file.getParentFile().mkdirs();
+                    try (FileWriter writer = new FileWriter(file)) {
+                        generateFile(archetype_ + File.separator + fl.template, writer);
+                    }
+                } else if (fl.type.equals("folder")) {
+                    file.mkdirs();
+                } else if (fl.type.equals("resource")) {
+                    try (FileWriter writer = new FileWriter(file)) {
+                        String content = data_.get("resource-" + fl.template);
+                        writer.write(content);
+                    }
                 } else {
                     throw new IllegalArgumentException("Template type or conversion not supported");
                 }

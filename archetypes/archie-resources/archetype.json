@@ -4,6 +4,10 @@
     {"name": "cmake-dirbuilds", "template": "cmake-dirbuilds-latest.cmake", "type": "none"},
     {"name": "cmake-builds", "template": "cmake-builds-latest.cmake", "type": "none"},
     {"name": "cmake-protobuf", "template": "cmake-protobuf-latest.cmake", "type": "none"},
-    {"name": "cmake-docs", "template": "cmake-docs-latest.cmake", "type": "none"}
+    {"name": "cmake-docs", "template": "cmake-docs-latest.cmake", "type": "none"},
+    {"name": "sphinx-conf", "template": "sphinx-conf-latest.py", "type": "template"},
+    {"name": "docs-index", "template": "docs-index-latest.md", "type": "none"},
+    {"name": "docs-api", "template": "docs-api-latest.md", "type": "template"},
+    {"name": "docs-readme", "template": "docs-readme-latest.md", "type": "template"}
     ]
 }
