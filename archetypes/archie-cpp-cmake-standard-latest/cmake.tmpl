@@ -1,16 +1,25 @@
 project({{cmakeNamespace}}-{{project}}
-    DESCRIPTION "A simple C++ project"
+    DESCRIPTION "A standard C++ project"
     LANGUAGES CXX)
 cmake_minimum_required(VERSION 3.13.5)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+include(archie-defaults)
+include(archie-builds)
+include(archie-docs)
 
 
-{{{resource-cmake-defaults}}}
+# Set global properties (WARNING: Only to be done at top level CMake file)
+set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ${ARCHIE_COMPILER_CACHE})
+#set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ${ARCHIE_LINKER_CACHE}) # linker cache disabled because of no major speed improvements
 
-
-{{{resource-cmake-builds}}}
-
-
-{{{resource-cmake-docs}}}
+# Set directory scope variables which affect target properties
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Debug")
+endif()
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
 # === Adding individual libraries =============================================

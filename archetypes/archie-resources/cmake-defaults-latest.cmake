@@ -1,17 +1,7 @@
 # === Define defaults ========================================================
 
-# Default build type
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Debug")
-endif()
+# Create Archie default build flags
 
-# TODO(rishin): Parametrise C++ standard
-# Default cpp version
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# Default build flags
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     # error options
     # See https://stackoverflow.com/questions/5088460/flags-to-enable-thorough-and-verbose-g-warnings
@@ -27,17 +17,22 @@ endif()
 # TODO(rishin): add flags for Clang
 # TODO(rishin): add flags for VC++
 
-# Default miscellaneous settings
+# Archie default environment discovery flags
+
 find_program(CCACHE_FOUND ccache) # Integration with ccahe.
 if(CCACHE_FOUND)
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
-    # ccache linking is disabled by default since it does not improve linking
-    # speed and meses with other caches
-    #set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
+    set(ARCHIE_COMPILER_CACHE ccache)
+    set(ARCHIE_LINKER_CACHE ccache)
 endif(CCACHE_FOUND)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Needed for third-party tools like vim and mull
+
 
 # === Default includes =======================================================
 
 include(FetchContent)
 set(FETCHCONTENT_QUIET OFF)
+
+
+# === Set Archie default behaviours (directory scope) ========================
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Needed for third-party tools like vim and mull
+

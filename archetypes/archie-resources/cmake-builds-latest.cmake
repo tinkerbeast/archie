@@ -1,25 +1,30 @@
-# === Coverage build =========================================================
+# === external dependencies ==================================================
 
-option(ARCHIE_COVERAGE "Enable coverage reporting" OFF)
-if(ARCHIE_COVERAGE) 
-    find_program(GCOV_PATH gcov)
-    find_program(LCOV_PATH NAMES lcov lcov.bat lcov.exe lcov.perl)
-    if(NOT GCOV_PATH)
-        message(FATAL_ERROR "ARCHIE: gcov not found")
-    endif()
-    if(NOT LCOV_PATH)
-        message(WARNING "ARCHIE: lcov is needed to run coverage target")
-    endif()
-    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang" AND CMAKE_BUILD_TYPE MATCHES "Debug")
-        # Debug option should set -O0 and -g flags necessary for coverage
-        # TODO(rishin): What if this changes in cmake in future?
-        message(STATUS "ARCHIE: Building with coverage enabled")
-    else()
-        message(FATAL_ERROR "ARCHIE: Conflicting build options with coverage enables")
-    endif()
+# ARCHIE_BUILD_COVERAGE - user option to convert overall build to coverage
+option(ARCHIE_BUILD_COVERAGE "Enable coverage reporting" OFF)
+# ARCHIE_BUILD_TESTING - user opiton to enable test buld along with regular build
+option(ARCHIE_BUILD_TESTING "Extend builds with tests" OFF)
+# ARCHIE_ERROR_FLAGS - variable (directory or parent scope) with default CXX options
+if(NOT ARCHIE_ERROR_FLAGS)
+  message(WARNING "ARCHIE_ERROR_FLAGS necessary for default CXX flags")
 endif()
 
-if(ARCHIE_COVERAGE AND LCOV_PATH)
+# === Coverage build =========================================================
+
+if(ARCHIE_BUILD_COVERAGE) 
+    find_program(GCOV_PATH gcov)
+    find_program(LCOV_PATH NAMES lcov lcov.bat lcov.exe lcov.perl)
+    if(NOT GCOV_PATH OR NOT LCOV_PATH)
+        message(FATAL_ERROR "ARCHIE: gcov and lcov is needed for coverage target")
+    endif()
+    # TODO(rishin): Support VC++
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang" AND CMAKE_BUILD_TYPE MATCHES "Debug")
+        # Debug option should set -O0 and -g flags necessary for coverage
+        message(STATUS "ARCHIE: Building with coverage enabled")
+    else()
+        message(FATAL_ERROR "ARCHIE: Conflicting build options with coverage enabled")
+    endif()
+
     add_custom_command(OUTPUT coverage.info
             COMMAND lcov --directory ${CMAKE_CURRENT_BINARY_DIR} --capture --output-file coverage.info
             COMMAND lcov --remove coverage.info '/usr/*' --output-file coverage.info
@@ -51,41 +56,46 @@ macro(archie_cxx_deps_segregate shared_libs interface_libs)
 endmacro()
 
 # cc_shared_library(namespace target
-#                   SRCS ...
-#                   INCL_PRIV ...
-#                   INCL_PUBL ...
-#                   DEPS_PRIV ...
-#                   DEPS_PUBL ...
+#                   [SRCS ...]
+#                   [INCL_PRIV ...]
+#                   [INCL_PUBL ...]
+#                   [DEPS_PRIV ...]
+#                   [DEPS_PUBL ...]
+#                   [COPTS = ARCHIE_ERROR_FLAGS]
 # )
 function(archie_cxx_library_shared namespace target)
-  # See: https://cmake.org/cmake/help/latest/command/cmake_parse_arguments.html
-  set(multiValueArgs SRCS INCL_PRIV INCL_PUBL DEPS_PRIV DEPS_PUBL)
-  cmake_parse_arguments(ARCHIE_CXX_LIB "" "" "${multiValueArgs}" ${ARGN} )
-  # Make shared library target
-  if(NOT ARCHIE_CXX_LIB_SRCS)
+  # Argument parsing, validation and defaults
+  set(multiValueArgs SRCS INCL_PRIV INCL_PUBL DEPS_PRIV DEPS_PUBL COPTS)
+  cmake_parse_arguments(CXX_LIB "" "" "${multiValueArgs}" ${ARGN})
+  if(NOT CXX_LIB_SRCS)
     message(FATAL_ERROR "archie_cxx_shared_library needs SRCS parameters")
   endif()
+  if(NOT CXX_LIB_COPTS)
+    set(CXX_LIB_COPTS ${ARCHIE_ERROR_FLAGS})
+  endif()
+  # Make shared library target
   set(lib_name "${namespace}-${target}")
-  add_library(${lib_name} SHARED ${ARCHIE_CXX_LIB_SRCS})
-  target_compile_options(${lib_name} PRIVATE ${ARCHIE_ERROR_FLAGS})
+  add_library(${lib_name} SHARED ${CXX_LIB_SRCS})
+  target_compile_options(${lib_name} PRIVATE ${CXX_LIB_COPTS})
   # Coverage related flags
-  if(ARCHIE_COVERAGE)
+  # TODO(rishin): support VC++ also
+  if(ARCHIE_BUILD_COVERAGE)
     target_compile_options(${lib_name} PRIVATE --coverage)
     target_link_options("${lib_name}" PRIVATE --coverage)
   endif()
   # Add include directories
-  if(ARCHIE_CXX_LIB_INCL_PRIV)
-    target_include_directories(${lib_name} PRIVATE ${ARCHIE_CXX_LIB_INCL_PRIV})
+  if(CXX_LIB_INCL_PRIV)
+    target_include_directories(${lib_name} PRIVATE ${CXX_LIB_INCL_PRIV})
   endif()
-  if(ARCHIE_CXX_LIB_INCL_PUBL)
-    target_include_directories(${lib_name} PUBLIC ${ARCHIE_CXX_LIB_INCL_PUBL})
+  if(CXX_LIB_INCL_PUBL)
+    target_include_directories(${lib_name} PUBLIC ${CXX_LIB_INCL_PUBL})
   endif()
   # Add private dependencies
-  if(ARCHIE_CXX_LIB_DEPS_PRIV)
-    target_link_libraries(${lib_name} PRIVATE ${ARCHIE_CXX_LIB_DEPS_PRIV})
+  if(CXX_LIB_DEPS_PRIV)
+    target_link_libraries(${lib_name} PRIVATE ${CXX_LIB_DEPS_PRIV})
   endif()
   # Add public dependencies
-  archie_cxx_deps_segregate(shared_libs interface_libs ${ARCHIE_CXX_LIB_DEPS_PUBL})
+  archie_cxx_deps_segregate(shared_libs interface_libs ${CXX_LIB_DEPS_PUBL})
   if(shared_libs)
     target_link_libraries(${lib_name} PUBLIC ${shared_libs})
   endif()
@@ -96,29 +106,38 @@ function(archie_cxx_library_shared namespace target)
   add_library(${namespace}::${target} ALIAS ${lib_name})
 endfunction()
 
-
+# cc_binary(namespace target
+#           [SRCS ...]
+#           [DEPS_PRIV ...]
+#           [DEPS_PUBL ...]
+#           [COPTS = ARCHIE_ERROR_FLAGS]
+#           [EXCLUDE_FROM_ALL]
+# )
 function(archie_cxx_executable namespace target)
-  # See: https://cmake.org/cmake/help/latest/command/cmake_parse_arguments.html
+  # Argument parsing, validation and defaults
   set(options EXCLUDE_FROM_ALL)
-  set(multiValueArgs SRCS DEPS_PRIV DEPS_PUBL)
-  cmake_parse_arguments(ARCHIE_CXX_EXE "${options}" "" "${multiValueArgs}" ${ARGN} )
-  # Make executable target
-  if(NOT ARCHIE_CXX_EXE_SRCS)
+  set(multiValueArgs SRCS DEPS_PRIV DEPS_PUBL COPTS)
+  cmake_parse_arguments(CXX_EXE "${options}" "" "${multiValueArgs}" ${ARGN})
+  if(NOT CXX_EXE_SRCS)
     message(FATAL_ERROR "archie_cxx_executable needs SRCS parameter")
   endif()
-  set(exec_name "${namespace}-${target}")
-  if(NOT ARCHIE_CXX_EXE_EXCLUDE_FROM_ALL)
-    add_executable(${exec_name} ${ARCHIE_CXX_EXE_SRCS})
-  else()
-    add_executable(${exec_name} EXCLUDE_FROM_ALL ${ARCHIE_CXX_EXE_SRCS})
+  if(NOT CXX_EXE_COPTS)
+    set(CXX_EXE_COPTS ${ARCHIE_ERROR_FLAGS})
   endif()
-  target_compile_options(${exec_name} PRIVATE ${ARCHIE_ERROR_FLAGS})
+  # Make executable target
+  set(exec_name "${namespace}-${target}")
+  if(NOT CXX_EXE_EXCLUDE_FROM_ALL)
+    add_executable(${exec_name} ${CXX_EXE_SRCS})
+  else()
+    add_executable(${exec_name} EXCLUDE_FROM_ALL ${CXX_EXE_SRCS})
+  endif()
+  target_compile_options(${exec_name} PRIVATE ${CXX_EXE_COPTS})
   # Add private dependencies
-  if(ARCHIE_CXX_EXE_DEPS_PRIV)
-    target_link_libraries(${exec_name} PRIVATE ${ARCHIE_CXX_EXE_DEPS_PRIV})
+  if(CXX_EXE_DEPS_PRIV)
+    target_link_libraries(${exec_name} PRIVATE ${CXX_EXE_DEPS_PRIV})
   endif()
   # Add public dependencies
-  archie_cxx_deps_segregate(shared_libs interface_libs ${ARCHIE_CXX_EXE_DEPS_PUBL})
+  archie_cxx_deps_segregate(shared_libs interface_libs ${CXX_EXE_DEPS_PUBL})
   if(shared_libs)
     target_link_libraries(${exec_name} PUBLIC ${shared_libs})
   endif()
@@ -126,8 +145,11 @@ function(archie_cxx_executable namespace target)
     target_link_libraries(${exec_name} INTERFACE ${interface_libs})
   endif()
 endfunction()
-  
-if(BUILD_TESTING)
+ 
+
+
+# TODO(rishin): Serach for installed gtest before downloading
+if(ARCHIE_BUILD_TESTING)
     FetchContent_Declare(
       googletest
       GIT_REPOSITORY    "https://github.com/google/googletest"
@@ -143,10 +165,9 @@ if(BUILD_TESTING)
     endif()
 
     include(CTest)
-endif()
 
-if(BUILD_TESTING)
-    
+  # TODO(rishin): gtest should be scoped properly
+  # TODO(rishin): use inbuilt gtest function instead of archite. See https://cmake.org/cmake/help/latest/module/GoogleTest.html#command:gtest_add_tests
   function(archie_cxx_test namespace target)
     if(NOT TARGET test-build)
         add_custom_target(test-build)
