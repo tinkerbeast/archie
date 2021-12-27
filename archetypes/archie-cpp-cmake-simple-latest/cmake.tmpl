@@ -6,18 +6,43 @@ cmake_minimum_required(VERSION 3.13.5)
 
 {{{resource-cmake-defaults}}}
 
+{{{resource-cmake-builds}}}
 
-{{{resource-cmake-dirbuilds}}}
+{{{resource-cmake-docs}}}
+
+
+# === Adding project wide settings============================================
+
+# Set global properties (WARNING: Only to be done at top level CMake file)
+set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ${ARCHIE_COMPILER_CACHE})
+#set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ${ARCHIE_LINKER_CACHE}) # linker cache disabled because of no major speed improvements
+
+# Set directory scope variables which affect target properties
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Debug")
+endif()
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
 # === Adding individual libraries =============================================
 
-archie_add_cxx_lib_dir("{{cmakeNamespace}}-{{project}}" ${CMAKE_CURRENT_SOURCE_DIR})
-#target_link_libraries("{{cmakeNamespace}}-{{project}}" PRIVATE ${lib_dependencies})
+archie_cxx_library_shared("{{cmakeNamespace}}" "{{project}}"
+    SRCS      ${CMAKE_CURRENT_SOURCE_DIR}/{{project}}.cpp
+              ${CMAKE_CURRENT_SOURCE_DIR}/{{project}}.h
+    INCL_PUBL ${CMAKE_CURRENT_SOURCE_DIR}/
+)
+
+archie_cxx_executable("{{cmakeNamespace}}" "{{project}}-main"
+    SRCS      ${CMAKE_CURRENT_SOURCE_DIR}/{{project}}_main.cpp
+    DEPS_PRIV {{cmakeNamespace}}::{{project}}
+)
 
 if(BUILD_TESTING)
-    archie_add_cxx_test_dir("test-{{cmakeNamespace}}-{{project}}" ${CMAKE_CURRENT_SOURCE_DIR} "{{cmakeNamespace}}-{{project}}")
+  archie_cxx_test("{{cmakeNamespace}}" "{{project}}-test"
+    SRCS      ${CMAKE_CURRENT_SOURCE_DIR}/{{project}}_test.cpp
+    DEPS_PRIV {{cmakeNamespace}}::{{project}}
+  )
 endif()
 
-archie_add_cxx_exec_file("{{cmakeNamespace}}-{{project}}-main" ${CMAKE_CURRENT_SOURCE_DIR}/{{project}}_main.cpp)
-target_link_libraries("{{cmakeNamespace}}-{{project}}-main" PRIVATE "{{cmakeNamespace}}-{{project}}")

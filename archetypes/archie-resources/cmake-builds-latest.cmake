@@ -150,21 +150,23 @@ endfunction()
 
 # TODO(rishin): Serach for installed gtest before downloading
 if(ARCHIE_BUILD_TESTING)
-    FetchContent_Declare(
-      googletest
-      GIT_REPOSITORY    "https://github.com/google/googletest"
-      GIT_TAG           "release-1.8.0"
-      GIT_SHALLOW       ON
-    )
-    # TODO(rishin): Change this to FetchContent_MakeAvailable and update cmake version to 3.14
-    FetchContent_GetProperties(googletest)
-    if(NOT googletest_POPULATED)
-        FetchContent_Populate(googletest)
-        # add the targets: gtest,gtest_main,gmock,gmock_main
-        add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR} EXCLUDE_FROM_ALL)
-    endif()
+  find_package(GTest REQUIRED)
 
-    include(CTest)
+#FetchContent_Declare(
+#    googletest
+#    GIT_REPOSITORY    "https://github.com/google/googletest"
+#    GIT_TAG           "release-1.8.0"
+#    GIT_SHALLOW       ON
+#  )
+#  # TODO(rishin): Change this to FetchContent_MakeAvailable and update cmake version to 3.14
+#  FetchContent_GetProperties(googletest)
+#  if(NOT googletest_POPULATED)
+#      FetchContent_Populate(googletest)
+#      # add the targets: gtest,gtest_main,gmock,gmock_main
+#      add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR} EXCLUDE_FROM_ALL)
+#  endif()
+
+  include(CTest)
 
   # TODO(rishin): gtest should be scoped properly
   # TODO(rishin): use inbuilt gtest function instead of archite. See https://cmake.org/cmake/help/latest/module/GoogleTest.html#command:gtest_add_tests
@@ -173,7 +175,7 @@ if(ARCHIE_BUILD_TESTING)
         add_custom_target(test-build)
     endif()
     archie_cxx_executable(${namespace} ${target} EXCLUDE_FROM_ALL ${ARGN})
-    target_link_libraries("${namespace}-${target}" PRIVATE gtest_main)
+    target_link_libraries("${namespace}-${target}" PRIVATE GTest::Main)
     add_dependencies(test-build "${namespace}-${target}")
     add_test(NAME "${namespace}:${target}" COMMAND "${namespace}-${target}")
   endfunction()
