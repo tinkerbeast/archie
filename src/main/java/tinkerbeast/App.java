@@ -86,16 +86,19 @@ public class App
 
     private void generateArchetype() {
         ObjectMapper mapper = new ObjectMapper();
-        InputStream descriptor = getClass().getClassLoader()
-            .getResourceAsStream(archetype_ + File.separator + ARCHETYPE_DESCRIPTOR_FILENAME);
+        String archetypeScopedName = archetype_ + File.separator + ARCHETYPE_DESCRIPTOR_FILENAME;
+        InputStream descriptor = getClass().getClassLoader().getResourceAsStream(archetypeScopedName);
         try {
+        if (null == descriptor) {
+        throw new IllegalArgumentException("Archetype not found " + archetypeScopedName);
+        }
             JsonNode jsonMap = mapper.readValue(descriptor, JsonNode.class);
             JsonNode fileNode = jsonMap.get("files");
             List<FileTemplate> files = mapper.convertValue(fileNode, new TypeReference<List<FileTemplate>>() {});
             for (FileTemplate fl : files) {
                 // TODO(rishin): proper logging.
                 File file = fileNameTemplateToFile(fl.name);
-                System.out.format("%s %s %s %n", file.toString(), fl.template, fl.type);
+                System.out.format("DEBUG %s %s %s %n", file.toString(), fl.template, fl.type);
                 if (fl.type.equals("template")) {
                     file.getParentFile().mkdirs();
                     try (FileWriter writer = new FileWriter(file)) {
@@ -104,6 +107,7 @@ public class App
                 } else if (fl.type.equals("folder")) {
                     file.mkdirs();
                 } else if (fl.type.equals("resource")) {
+                    file.getParentFile().mkdirs();
                     try (FileWriter writer = new FileWriter(file)) {
                         String content = data_.get("resource-" + fl.template);
                         writer.write(content);
