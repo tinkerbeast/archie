@@ -17,7 +17,7 @@ if(DOXYGEN_FOUND)
       "include" "src"
       COMMENT "ARCHIE: Doxygen found and custom target `docs` added")
 else()
-  message(WARNING "ARCHIE: Doxygen not found, so targe `docs` will not be available")
+  message(WARNING "ARCHIE: Doxygen not found, so target `docs` will not be available")
 endif()
 
 
@@ -171,5 +171,8 @@ endfunction()
 if(ARCHIE_SPHINX_FOUND)
   archie_sphinx_add_docs(site
       "docs")
+  message(COMMENT "ARCHIE: Sphinx found and custom target `site` added")
+else()
+  message(WARNING "ARCHIE: Sphinx not found, so target `site` will not be available")
 endif()
 

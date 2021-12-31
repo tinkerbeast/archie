@@ -4,7 +4,8 @@ project({{cmakeNamespace}}-{{project}}
 cmake_minimum_required(VERSION 3.13.5)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-include(archie-defaults)
+# Include archie CMake libraries
+include(archie-defaults) # Should only be included in top-level cmake file
 include(archie-builds)
 include(archie-docs)
 
@@ -13,10 +14,9 @@ include(archie-docs)
 set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ${ARCHIE_COMPILER_CACHE})
 #set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ${ARCHIE_LINKER_CACHE}) # linker cache disabled because of no major speed improvements
 
-# Set directory scope variables which affect target properties
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE "Debug")
-endif()
+
+# === Set directory scope variables which affect target properties ===========
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -35,7 +35,7 @@ archie_cxx_executable("{{cmakeNamespace}}" "{{project}}-main"
     DEPS_PRIV {{cmakeNamespace}}::{{project}}
 )
 
-if(BUILD_TESTING)
+if(ARCHIE_ENABLE_TESTING)
   archie_cxx_test("{{cmakeNamespace}}" "{{project}}-test"
     SRCS      ${CMAKE_CURRENT_SOURCE_DIR}/test/{{projectLower}}_test.cpp
     DEPS_PRIV {{cmakeNamespace}}::{{project}}

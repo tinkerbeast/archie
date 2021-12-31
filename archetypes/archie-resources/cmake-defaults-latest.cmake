@@ -32,7 +32,23 @@ include(FetchContent)
 set(FETCHCONTENT_QUIET OFF)
 
 
-# === Set Archie default behaviours (directory scope) ========================
+# === Set Archie default behaviours (current directory and subdir scope unless overwritten) =
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Needed for third-party tools like vim and mull
+# Needed for third-party tools like vim and mull (C++ mutator)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON) 
 
+# ARCHIE_BUILD_TYPE overrides CMAKE_BUILD_TYPE. It also provides additional 
+# build types like "Coverage"". If ARCHIE_BUILD_TYPE is not set, it takes the 
+# value from CMAKE_BUILD_TYPE. Default ARCHIE_BUILD_TYPE is "Debug".
+if(NOT ARCHIE_BUILD_TYPE)
+  if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Debug")
+  endif()
+  set(ARCHIE_BUILD_TYPE ${CMAKE_BUILD_TYPE})
+else()
+  if ("Coverage" STREQUAL "${ARCHIE_BUILD_TYPE}")
+    set(CMAKE_BUILD_TYPE "Debug")
+  else()
+    set(CMAKE_BUILD_TYPE "${ARCHIE_BUILD_TYPE}")
+  endif()
+endif()

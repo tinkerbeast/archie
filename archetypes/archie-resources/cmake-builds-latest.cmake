@@ -1,7 +1,5 @@
 # === external dependencies ==================================================
 
-# ARCHIE_BUILD_COVERAGE - user option to convert overall build to coverage
-option(ARCHIE_BUILD_COVERAGE "Enable coverage reporting" OFF)
 # ARCHIE_BUILD_TESTING - user opiton to enable test buld along with regular build
 option(ARCHIE_BUILD_TESTING "Extend builds with tests" OFF)
 # ARCHIE_ERROR_FLAGS - variable (directory or parent scope) with default CXX options
@@ -11,7 +9,7 @@ endif()
 
 # === Coverage build =========================================================
 
-if(ARCHIE_BUILD_COVERAGE) 
+if("Coverage" STREQUAL "${ARCHIE_BUILD_TYPE}") 
     find_program(GCOV_PATH gcov)
     find_program(LCOV_PATH NAMES lcov lcov.bat lcov.exe lcov.perl)
     if(NOT GCOV_PATH OR NOT LCOV_PATH)
@@ -79,7 +77,7 @@ function(archie_cxx_library_shared namespace target)
   target_compile_options(${lib_name} PRIVATE ${CXX_LIB_COPTS})
   # Coverage related flags
   # TODO(rishin): support VC++ also
-  if(ARCHIE_BUILD_COVERAGE)
+  if("Coverage" STREQUAL "${ARCHIE_BUILD_TYPE}")
     target_compile_options(${lib_name} PRIVATE --coverage)
     target_link_options("${lib_name}" PRIVATE --coverage)
   endif()
@@ -149,7 +147,7 @@ endfunction()
 
 
 # TODO(rishin): Serach for installed gtest before downloading
-if(ARCHIE_BUILD_TESTING)
+if(ARCHIE_ENABLE_TESTING)
   find_package(GTest REQUIRED)
 
 #FetchContent_Declare(
@@ -177,7 +175,8 @@ if(ARCHIE_BUILD_TESTING)
     archie_cxx_executable(${namespace} ${target} EXCLUDE_FROM_ALL ${ARGN})
     target_link_libraries("${namespace}-${target}" PRIVATE GTest::Main)
     add_dependencies(test-build "${namespace}-${target}")
-    add_test(NAME "${namespace}:${target}" COMMAND "${namespace}-${target}")
+    gtest_add_tests(TARGET "${namespace}-${target}"
+                    TEST_PREFIX "${namespace}:")
   endfunction()
 
 endif()
