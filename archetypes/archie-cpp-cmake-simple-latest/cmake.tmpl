@@ -3,13 +3,11 @@ project({{cmakeNamespace}}-{{project}}
     LANGUAGES CXX)
 cmake_minimum_required(VERSION 3.13.5)
 
-
 {{{resource-cmake-defaults}}}
 
 {{{resource-cmake-builds}}}
 
 {{{resource-cmake-docs}}}
-
 
 # === Adding project wide settings============================================
 
@@ -18,9 +16,6 @@ set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ${ARCHIE_COMPILER_CACHE})
 #set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ${ARCHIE_LINKER_CACHE}) # linker cache disabled because of no major speed improvements
 
 # Set directory scope variables which affect target properties
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE "Debug")
-endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -39,10 +34,21 @@ archie_cxx_executable("{{cmakeNamespace}}" "{{project}}-main"
     DEPS_PRIV {{cmakeNamespace}}::{{project}}
 )
 
-if(BUILD_TESTING)
+if(ARCHIE_TESTING_ENABLED)
   archie_cxx_test("{{cmakeNamespace}}" "{{project}}-test"
     SRCS      ${CMAKE_CURRENT_SOURCE_DIR}/{{project}}_test.cpp
     DEPS_PRIV {{cmakeNamespace}}::{{project}}
   )
 endif()
 
+if(DOXYGEN_FOUND)
+  doxygen_add_docs(docs
+      "include" "src"
+      COMMENT "ARCHIE: Doxygen found and custom target `docs` added")
+endif()
+if(ARCHIE_SPHINX_FOUND)
+  archie_sphinx_add_docs(site
+      "docs"
+      COMMENT "ARCHIE: Sphinx found and custom target `site` added")
+      )
+endif()

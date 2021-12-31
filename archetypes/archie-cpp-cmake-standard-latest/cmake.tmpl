@@ -41,3 +41,15 @@ if(ARCHIE_ENABLE_TESTING)
     DEPS_PRIV {{cmakeNamespace}}::{{project}}
   )
 endif()
+
+if(DOXYGEN_FOUND)
+  doxygen_add_docs(docs
+      "include" "src"
+      COMMENT "ARCHIE: Doxygen found and custom target `docs` added")
+endif()
+if(ARCHIE_SPHINX_FOUND)
+  archie_sphinx_add_docs(site
+      "docs"
+      COMMENT "ARCHIE: Sphinx found and custom target `site` added")
+      )
+endif()
