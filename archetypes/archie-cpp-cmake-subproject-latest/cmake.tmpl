@@ -2,33 +2,17 @@ project({{cmakeNamespace}}-{{project}}
     DESCRIPTION "A standard C++ project"
     LANGUAGES CXX)
 cmake_minimum_required(VERSION 3.13.5)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
-# Include archie CMake libraries
-include(archie-defaults) # Should only be included in top-level cmake file
-include(archie-builds)
-include(archie-docs)
-
-
-# Set global properties (WARNING: Only to be done at top level CMake file)
-set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ${ARCHIE_COMPILER_CACHE})
-#set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ${ARCHIE_LINKER_CACHE}) # linker cache disabled because of no major speed improvements
-
-
-# === Set directory scope variables which affect target properties ===========
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 
 # === Adding individual libraries =============================================
+
+add_custom_target("{{cmakeNamespace}}")
 
 archie_cxx_library_shared("{{cmakeNamespace}}" "{{project}}"
     SRCS      ${CMAKE_CURRENT_SOURCE_DIR}/src/{{projectLower}}.cpp
               ${CMAKE_CURRENT_SOURCE_DIR}/include/{{cmakeNamespace}}/{{projectLower}}.h
     INCL_PUBL ${CMAKE_CURRENT_SOURCE_DIR}/include/
 )
+add_dependencies("{{cmakeNamespace}}" "{{cmakeNamespace}}::{{project}}")
 
 archie_cxx_executable("{{cmakeNamespace}}" "{{project}}-main"
     SRCS      ${CMAKE_CURRENT_SOURCE_DIR}/src/{{projectLower}}_main.cpp
@@ -43,12 +27,12 @@ if(ARCHIE_ENABLE_TESTING)
 endif()
 
 if(DOXYGEN_FOUND)
-  doxygen_add_docs(docs
-      "include" "src"
-      COMMENT "ARCHIE: Doxygen found and custom target `docs` added")
+  doxygen_add_docs("{{cmakeNamespace}}-docs"
+      "include" "src")
+  add_dependencies("docs" "{{cmakeNamespace}}-docs")
 endif()
 if(ARCHIE_SPHINX_FOUND)
-  archie_sphinx_add_docs(site
-      "docs"
-      COMMENT "ARCHIE: Sphinx found and custom target `site` added")
+  archie_sphinx_add_docs("{{cmakeNamespace}}-site"
+      "docs")
+  add_dependencies("site" "{{cmakeNamespace}}-site")
 endif()

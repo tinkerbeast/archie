@@ -1,6 +1,6 @@
 {
     "files": [
-        {"name": "{{project}}/{{project}}.proto", "template": "proto.tmpl", "type": "template"},
+        {"name": "{{project}}/{{projectLower}}.proto", "template": "proto.tmpl", "type": "template"},
         {"name": "{{project}}/CMakeLists.txt", "template": "cmake.tmpl", "type": "template"},
         {"name": "{{project}}/build.gradle", "template": "gradle.tmpl", "type": "template"}
     ]

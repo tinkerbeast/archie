@@ -1,0 +1,18 @@
+{
+  "files": [
+    {"name": "{{cmakeNamespace}}/src/{{projectLower}}.cpp", "template": "cppfile.tmpl", "type": "template"},
+    {"name": "{{cmakeNamespace}}/test/{{projectLower}}_test.cpp", "template": "cpptest.tmpl", "type": "template"},
+    {"name": "{{cmakeNamespace}}/src/{{projectLower}}_main.cpp", "template": "cppmain.tmpl", "type": "template"},
+    {"name": "{{cmakeNamespace}}/include/{{cmakeNamespace}}/{{projectLower}}.h", "template": "header.tmpl", "type": "template"},
+
+    {"name": "{{cmakeNamespace}}/CMakeLists.txt", "template": "cmake.tmpl", "type": "template"},
+
+    {"name": "{{cmakeNamespace}}/docs/_static", "type": "folder"},
+    {"name": "{{cmakeNamespace}}/docs/_templates", "type": "folder"},
+    {"name": "{{cmakeNamespace}}/docs/conf.py", "template": "sphinx-conf", "type": "resource"},
+    {"name": "{{cmakeNamespace}}/docs/index.md", "template": "docs-index", "type": "resource"},
+    {"name": "{{cmakeNamespace}}/docs/api.md", "template": "docs-api", "type": "resource"},
+
+    {"name": "{{cmakeNamespace}}/README.md", "template": "docs-readme", "type": "resource"}
+  ]
+}

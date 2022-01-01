@@ -1,0 +1,34 @@
+project({{cmakeNamespace}}-{{project}}
+    DESCRIPTION "A standard C++ project"
+    LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.13.5)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+# Include archie CMake libraries
+include(archie-defaults) # Should only be included in top-level cmake file
+include(archie-builds)
+include(archie-docs)
+
+
+# Set global properties (WARNING: Only to be done at top level CMake file)
+set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ${ARCHIE_COMPILER_CACHE})
+#set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ${ARCHIE_LINKER_CACHE}) # linker cache disabled because of no major speed improvements
+
+
+# === Set directory scope variables which affect target properties ===========
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+
+# === Adding individual projects =============================================
+
+add_custom_target(docs)
+add_custom_target(site)
+
+add_subdirectory("{{cmakeNamespace}}A-{{projectLower}}x")
+add_subdirectory("{{cmakeNamespace}}A-{{projectLower}}y")
+add_subdirectory("{{cmakeNamespace}}B-{{projectLower}}x")
+add_subdirectory("{{cmakeNamespace}}B-{{projectLower}}y")
+
