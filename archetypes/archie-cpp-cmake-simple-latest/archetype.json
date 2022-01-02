@@ -3,7 +3,7 @@
     {"name": "{{project}}/{{project}}.cpp", "template": "cppfile.tmpl", "type": "template"},
     {"name": "{{project}}/{{project}}_test.cpp", "template": "cpptest.tmpl", "type": "template"},
     {"name": "{{project}}/{{project}}_main.cpp", "template": "cppmain.tmpl", "type": "template"},
-    {"name": "{{project}}/{{project}}.h", "template": "header.tmpl", "type": "template"},
+    {"name": "{{project}}/{{project}}.h", "template": "cpp-header", "type": "resource"},
     {"name": "{{project}}/CMakeLists.txt", "template": "cmake.tmpl", "type": "template"}
   ]
 }

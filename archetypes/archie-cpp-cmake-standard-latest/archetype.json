@@ -3,7 +3,7 @@
     {"name": "{{cmakeNamespace}}-{{projectLower}}/src/{{projectLower}}.cpp", "template": "cppfile.tmpl", "type": "template"},
     {"name": "{{cmakeNamespace}}-{{projectLower}}/test/{{projectLower}}_test.cpp", "template": "cpptest.tmpl", "type": "template"},
     {"name": "{{cmakeNamespace}}-{{projectLower}}/src/{{projectLower}}_main.cpp", "template": "cppmain.tmpl", "type": "template"},
-    {"name": "{{cmakeNamespace}}-{{projectLower}}/include/{{cmakeNamespace}}/{{projectLower}}.h", "template": "header.tmpl", "type": "template"},
+    {"name": "{{cmakeNamespace}}-{{projectLower}}/include/{{cmakeNamespace}}/{{projectLower}}.h", "template": "cpp-header", "type": "resource"},
 
     {"name": "{{cmakeNamespace}}-{{projectLower}}/CMakeLists.txt", "template": "cmake.tmpl", "type": "template"},
     {"name": "{{cmakeNamespace}}-{{projectLower}}/cmake/archie-defaults.cmake", "template": "cmake-defaults", "type": "resource"},
