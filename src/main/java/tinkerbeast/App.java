@@ -30,6 +30,12 @@ public class App
   private Map<String, String> data_ = new HashMap<>();
   private Map<String, String> resourceData_ = new HashMap<>();
 
+  
+  private ResourceUtil ru_;
+
+  App() throws IOException {
+    this.ru_ = new ResourceUtil("archetypes");
+  }
 
   private void populateData() {
     String namespace = data_.get("namespace");
@@ -51,30 +57,32 @@ public class App
 
   private void createResourceMap() throws IOException {
     ObjectMapper mapper = new ObjectMapper();
-    InputStream descriptor = getClass().getClassLoader()
-      .getResourceAsStream("archie-resources" + File.separator + ARCHETYPE_DESCRIPTOR_FILENAME);
+    InputStream descriptor = ru_.getResource("archie-resources", ARCHETYPE_DESCRIPTOR_FILENAME);
     JsonNode jsonMap = mapper.readValue(descriptor, JsonNode.class);
     JsonNode fileNode = jsonMap.get("files");
     List<FileTemplate> files = 
         mapper.convertValue(fileNode, new TypeReference<List<FileTemplate>>() {});
     for (FileTemplate fl : files) {
-      String resourcePath = "archie-resources" + File.separator + fl.template;
+      System.out.format("DEBUG createResourceMap tmpl=(%s %s %s)%n", fl.name, fl.template, fl.type);
+      final String resourceName = "resource-" + fl.name;
       if (fl.type.equals("template")) {
+        
+        BufferedReader reader = new BufferedReader(new InputStreamReader(ru_.getResource("archie-resources", fl.template)));
         StringWriter writer = new StringWriter();
-        generateFile(resourcePath, writer);
-        resourceData_.put("resource-" + fl.name, writer.toString());
+        generateFile(resourceName, reader, writer);
+        resourceData_.put(resourceName, writer.toString());
       } else { // TODO: handle none type
-        InputStream resource = getClass().getClassLoader().getResourceAsStream(resourcePath);
-        resourceData_.put("resource-" + fl.name,
+        InputStream resource = ru_.getResource("archie-resources", fl.template);
+        resourceData_.put(resourceName,
             new String(resource.readAllBytes(), StandardCharsets.UTF_8));
       }
     }
     data_.putAll(resourceData_);
   }
 
-  private void generateFile(String resourceName, Writer out) throws IOException {
+  private void generateFile(String name, Reader in, Writer out) throws IOException {
     MustacheFactory mf = new DefaultMustacheFactory();
-    Mustache fileContents = mf.compile(resourceName);
+    Mustache fileContents = mf.compile(in, name);
     fileContents.execute(out, data_).flush();
   }
 
@@ -94,15 +102,13 @@ public class App
     if (recursionDepth > 10) {
       throw new IllegalArgumentException("Too much recursion");
     }
-    // Get the archetype.json as InputStream.
-    String archetypeScopedName = 
-        data_.get("archetype") + File.separator + ARCHETYPE_DESCRIPTOR_FILENAME;
-    InputStream descriptor = getClass().getClassLoader().getResourceAsStream(archetypeScopedName);
-    if (null == descriptor) {
-      throw new IllegalArgumentException("Archetype not found " + archetypeScopedName);
-    }
 
     try {
+      // Get the archetype.json as InputStream.
+      InputStream descriptor = ru_.getResource(data_.get("archetype"), ARCHETYPE_DESCRIPTOR_FILENAME);
+      if (null == descriptor) {
+        throw new IllegalArgumentException("Archetype not found " + data_.get("archetype"));
+      }
       // Parse the archetype.json file. 
       ObjectMapper mapper = new ObjectMapper();
       JsonNode jsonMap = mapper.readValue(descriptor, JsonNode.class);
@@ -116,12 +122,15 @@ public class App
               directoryContext + File.separator + fl.name, data_));
         
         // TODO(rishin): proper logging.
-        System.out.format("DEBUG %s %s %s %n", fileOrDir.toString(), fl.template, fl.type);
+        System.out.format("DEBUG generateArchetype tmpl=(%s %s %s) out=%s%n", fl.name, fl.template, fl.type, fileOrDir.toString());
         
         if (fl.type.equals("template")) {
           fileOrDir.getParentFile().mkdirs();
           try (FileWriter writer = new FileWriter(fileOrDir)) {
-            generateFile(data_.get("archetype") + File.separator + fl.template, writer);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(ru_.getResource(data_.get("archetype"), fl.template)));
+            //generateFile(data_.get("archetype") + File.separator + fl.template, writer);
+            String name = String.format("%s/%s", data_.get("archetype"), fl.template);
+            generateFile(name, reader, writer);
           }
         } else if (fl.type.equals("folder")) {
           fileOrDir.mkdirs();
