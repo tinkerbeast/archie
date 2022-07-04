@@ -15,8 +15,9 @@ _ME="$(basename "${0}")"
 # Start of script
 ###############################################################################
 if [[ "${1:--h}" =~ ^-h|--help$ ]]; then
-  mvn exec:java -Dexec.mainClass="tinkerbeast.App" -Dexec.args="--help"  
+  mvn exec:java -q -Dexec.mainClass="tinkerbeast.App" -Dexec.args="--help"  
 else
+  # TODO: add -q flag once Cli is finalised
   mvn exec:java -Dexec.mainClass="tinkerbeast.App" -Dexec.args="${*}"
 fi
 

@@ -4,8 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.mustachejava.*;
-import org.apache.commons.cli.*;
-
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -27,14 +25,21 @@ public class App
 
   private static final String ARCHETYPE_DESCRIPTOR_FILENAME = "archetype.json";
   private static final String ARCHETYPE_DEFAULT_VERSION = "latest";
-  private Map<String, String> data_ = new HashMap<>();
+  
   private Map<String, String> resourceData_ = new HashMap<>();
+  // tentative fqan naming com.github/tinkerbeast/::archie-cpp-cmake-twolevel::latest
+  //                       com.google.cloud.cproj::somearchetype::version
+  // fqan - fully qualified archetype naming
+  // constraint - provider, archetype name, version may not contain ::
+  // Folder name for somearchetype::version is somearchetype/version
 
   
   private ResourceUtil ru_;
+  private Map<String, String> data_;
 
-  App() throws IOException {
+  App(Map<String, String> archetypeGenerationParameters) throws IOException {
     this.ru_ = new ResourceUtil("archetypes");
+    this.data_ = archetypeGenerationParameters;
   }
 
   private void populateData() {
@@ -95,6 +100,11 @@ public class App
     fileName.execute(writer, data).flush();
     // Create the file and directory.
     return writer.toString();
+  }
+
+
+  public void generateArchetype() {
+    generateArchetype(data_.get("output"), 0);
   }
 
   private void generateArchetype(String directoryContext, int recursionDepth) {
@@ -168,73 +178,16 @@ public class App
     }
   }
 
-  public void parseArguments(String[] args) throws ParseException {
-    // Create the options.
-    Options options = new Options();
-    options.addOption(Option.builder("n")
-                .desc("Namespace of the project (required)")
-                .hasArg()
-                .argName("NAMESPACE")
-                .required()
-                .longOpt("namespace")
-                .build());
-     options.addOption(Option.builder("p")
-                .desc("Name of the project (required)")
-                .hasArg()
-                .argName("PROJECT")
-                .required()
-                .longOpt("project")
-                .build());
-     options.addOption(Option.builder("a")
-                .desc("Archetype to generate from (required)")
-                .hasArg()
-                .argName("ARCHETYPE")
-                .required()
-                .longOpt("archetype")
-                .build());
-     options.addOption(Option.builder("x")
-                .desc(String.format("Archetype ver (default %s)", ARCHETYPE_DEFAULT_VERSION))
-                .hasArg()
-                .argName("ARCHETYPE-VERSION")
-                .longOpt("archetype-version")
-                .build());
-     options.addOption(Option.builder("h")
-                .desc("Print help")
-                .longOpt("help")
-                .build());
-    // Try to parse the command line.
-    boolean printHelpAndExit = false;
-    CommandLineParser parser = new DefaultParser();
-    CommandLine cmd = null;
-    try {
-      cmd = parser.parse(options, args);
-      printHelpAndExit = (cmd.getOptionValue('h') != null);
-    } catch (ParseException e) {
-      e.printStackTrace();
-      printHelpAndExit = true;
-    }
-    // Print help and exit if required.
-    if (printHelpAndExit) {
-      String header = "Archetype generation system.\n\n";
-      String footer = "\nPlease report issues at https://github.com/tinkerbeast/archie";
-      HelpFormatter formatter = new HelpFormatter();
-      formatter.printHelp("archie", header, options, footer, true);
-      System.exit(1);
-    }
-    // Form values from the options.
-    String archetypeWithVersion = 
-      cmd.getOptionValue('a') + "-" + cmd.getOptionValue('x', ARCHETYPE_DEFAULT_VERSION);
-    data_.put("archetype", archetypeWithVersion);
-    data_.put("namespace", cmd.getOptionValue("namespace"));
-    data_.put("project", cmd.getOptionValue("project"));
-  }
+  
 
-  public static void main( String[] args ) throws Exception {
-    App app = new App();
-    app.parseArguments(args);
-    app.populateData();
-    app.createResourceMap();
-    String currentDir = System.getProperty("user.dir");
-    app.generateArchetype(currentDir, 0);
+  public static void main( String[] args ) throws Exception {     
+    Map<String, String> options = ArgumentParser.parseArguments(args);
+    if (options != null) {
+      App app = new App(options);
+      app.populateData();
+      app.createResourceMap();
+      app.generateArchetype();
+    }
+    
   }
 }
