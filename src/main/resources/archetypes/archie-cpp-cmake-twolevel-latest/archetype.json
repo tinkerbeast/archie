@@ -1,30 +1,30 @@
 {
   "files": [
-    {"name": "root-{{cmakeNamespace}}/CMakeLists.txt", "template": "cmake.tmpl", "type": "template"},
-    {"name": "root-{{cmakeNamespace}}/cmake/archie-defaults.cmake", "template": "cmake-defaults", "type": "resource"},
-    {"name": "root-{{cmakeNamespace}}/cmake/archie-builds.cmake", "template": "cmake-builds", "type": "resource"},
-    {"name": "root-{{cmakeNamespace}}/cmake/archie-docs.cmake", "template": "cmake-docs", "type": "resource"},
+    {"name": "{{cmakeNamespace}}/CMakeLists.txt", "template": "cmake.tmpl", "type": "template"},
+    {"name": "{{cmakeNamespace}}/cmake/archie-defaults.cmake", "template": "cmake-defaults", "type": "resource"},
+    {"name": "{{cmakeNamespace}}/cmake/archie-builds.cmake", "template": "cmake-builds", "type": "resource"},
+    {"name": "{{cmakeNamespace}}/cmake/archie-docs.cmake", "template": "cmake-docs", "type": "resource"},
 
 
-    {"name": "root-{{cmakeNamespace}}/README.md", "template": "docs-readme", "type": "resource"},
+    {"name": "{{cmakeNamespace}}/README.md", "template": "docs-readme", "type": "resource"},
 
 
-    {"name": "root-{{cmakeNamespace}}", "template": "archie-cpp-cmake-subproject-latest", "type": "archetype",
+    {"name": "{{cmakeNamespace}}", "template": "archie-cpp-cmake-subproject-latest", "type": "archetype",
       "data" : {
         "namespace": "{{namespace}}A", "project": "{{project}}X"
       }
     },
-    {"name": "root-{{cmakeNamespace}}", "template": "archie-cpp-cmake-subproject-latest", "type": "archetype",
+    {"name": "{{cmakeNamespace}}", "template": "archie-cpp-cmake-subproject-latest", "type": "archetype",
       "data" : {
         "namespace": "{{namespace}}B", "project": "{{project}}Y"
       }
     },
-    {"name": "root-{{cmakeNamespace}}", "template": "archie-cpp-cmake-subproject-latest", "type": "archetype",
+    {"name": "{{cmakeNamespace}}", "template": "archie-cpp-cmake-subproject-latest", "type": "archetype",
       "data" : {
         "namespace": "{{namespace}}C", "project": "{{project}}X"
       }
     },
-    {"name": "root-{{cmakeNamespace}}", "template": "archie-cpp-cmake-subproject-latest", "type": "archetype",
+    {"name": "{{cmakeNamespace}}", "template": "archie-cpp-cmake-subproject-latest", "type": "archetype",
       "data" : {
         "namespace": "{{namespace}}D", "project": "{{project}}Y"
       }

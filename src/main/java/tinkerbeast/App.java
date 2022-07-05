@@ -31,6 +31,8 @@ public class App
   //                       com.google.cloud.cproj::somearchetype::version
   // fqan - fully qualified archetype naming
   // constraint - provider, archetype name, version may not contain ::
+  //            - provider, archetype name, version may not contain /
+  //            - provider, archetype name, version may not contain File.seperator
   // Folder name for somearchetype::version is somearchetype/version
 
   
@@ -55,7 +57,7 @@ public class App
     data_.put("cmakeNamespace", namespace.replace('.', '-'));
     // data time
     String year = new SimpleDateFormat("yyyy").format(new Date());
-    data_.put("time-year", year); 
+    data_.put("time-year", year);
     
     System.out.format("DEBUG cppHeaderGuard=%s %n", data_.get("cppHeaderGuard"));
   }
@@ -93,15 +95,17 @@ public class App
 
   private static String stringTemplateToString(String stringTemplate, Map<String, String> data) 
       throws IOException {
-    MustacheFactory mf = new DefaultMustacheFactory();
-    // Create the file name.
+    
+    String templateName = "?????????????????????????????????????????????";
+    StringReader reader = new StringReader(stringTemplate);
     StringWriter writer = new StringWriter();
-    Mustache fileName = mf.compile(new StringReader(stringTemplate), stringTemplate);
+    MustacheFactory mf = new DefaultMustacheFactory();
+
+    Mustache fileName = mf.compile(reader, templateName);
     fileName.execute(writer, data).flush();
     // Create the file and directory.
     return writer.toString();
   }
-
 
   public void generateArchetype() {
     generateArchetype(data_.get("output"), 0);
@@ -114,6 +118,9 @@ public class App
     }
 
     try {
+      // Generate data for current context
+      this.populateData();
+      this.createResourceMap();
       // Get the archetype.json as InputStream.
       InputStream descriptor = ru_.getResource(data_.get("archetype"), ARCHETYPE_DESCRIPTOR_FILENAME);
       if (null == descriptor) {
@@ -146,22 +153,27 @@ public class App
           fileOrDir.mkdirs();
         } else if (fl.type.equals("archetype")) {
           fileOrDir.mkdirs();
+          String nsTmpl = fl.data.get("namespace");
+          String projTmpl = fl.data.get("project");
           String newNamespace = stringTemplateToString(fl.data.get("namespace"), data_);
           String newProject = stringTemplateToString(fl.data.get("project"), data_);
+          System.out.format("DEBUG generateArchetype nsTmpl=%s projTmpl=%s newNs=%s newProj=%s%n", nsTmpl, projTmpl, newNamespace, newProject);
+
           // Cache the old data and copy it.
           Map<String, String> newData = new HashMap<>();
           newData.put("archetype", fl.template);
           newData.put("namespace", newNamespace);
           newData.put("project", newProject);
-          newData.putAll(resourceData_);
+          //newData.putAll(resourceData_);
+
           // Change the context
           Map<String, String> oldData = data_;
           data_ = newData;
-          populateData();
           // Recurse to generate the archetype
           System.out.format("DEBUG cur=%s sub=%s %n", directoryContext, fileOrDir.getAbsolutePath());
           generateArchetype(fileOrDir.getAbsolutePath(), recursionDepth + 1);
           // Restore contexts
+
           data_ = oldData;
         } else if (fl.type.equals("resource")) {
           fileOrDir.getParentFile().mkdirs();
@@ -184,8 +196,6 @@ public class App
     Map<String, String> options = ArgumentParser.parseArguments(args);
     if (options != null) {
       App app = new App(options);
-      app.populateData();
-      app.createResourceMap();
       app.generateArchetype();
     }
     
