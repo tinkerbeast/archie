@@ -5,9 +5,9 @@ import java.util.Map;
 
 import org.apache.commons.cli.*;
 
-class ArgumentParser {
+import tinkerbeast.generators.Config;
 
-  private static final String ARCHETYPE_DEFAULT_VERSION = "latest";
+class ArgumentParser {
 
   private static Options helpOptions = buildHelpOptions_();
   private static Options allOptions = buildAllOptions_(true);
@@ -36,14 +36,14 @@ class ArgumentParser {
         .longOpt("archetype")
         .build());
     options.addOption(Option.builder("x")
-        .desc(String.format("Archetype ver (default %s)", ArgumentParser.ARCHETYPE_DEFAULT_VERSION))
+        .desc(String.format("Archetype ver (default %s)", Config.ARCHETYPE_DEFAULT_VERSION))
         .hasArg()
         .argName("ARCHETYPE-VERSION")
         .longOpt("archetype-version")
         .build());
     
     options.addOption(Option.builder("l")
-        .desc(String.format("Archetype ver (default %s)", ArgumentParser.ARCHETYPE_DEFAULT_VERSION))
+        .desc(String.format("Archetype ver (default %s)", Config.ARCHETYPE_DEFAULT_VERSION))
         .hasArg()
         .argName("ARCHETYPE-VERSION")
         .longOpt("archetype-version")
@@ -114,15 +114,26 @@ class ArgumentParser {
     // Convert options to parameters
     Map<String, String> data = new HashMap<>();
     // TODO: there must be a better mechanism of geeting default version
-    String version = cmd.getOptionValue('x', ArgumentParser.ARCHETYPE_DEFAULT_VERSION);
-    String archetypeWithVersion = cmd.getOptionValue('a') + "-" + version;
-    data.put("archetype", archetypeWithVersion);
+    String version = cmd.getOptionValue('x', Config.ARCHETYPE_DEFAULT_VERSION);
+    String archetypeWithProvider = cmd.getOptionValue('a');
+    String[] archetypeAndProvider = archetypeWithProvider.split("::");
+    String archetype;
+    String provider;
+    if (archetypeAndProvider.length == 1) {
+      archetype = archetypeAndProvider[0];
+      provider = Config.ARCHETYPE_DEFAULT_PROVIDER;
+    } else {
+      archetype = archetypeAndProvider[1];
+      provider = archetypeAndProvider[0];
+    }
+    data.put("archetype", archetype);
+    data.put("provider", provider);
     data.put("namespace", cmd.getOptionValue("namespace"));
     data.put("project", cmd.getOptionValue("project"));
     // TODO: getting output directory default value needs to be thought upon
-    data.put("output", System.getProperty("user.dir")); 
+    data.put("output", System.getProperty("user.dir"));
     data.put("version", version);
-    return data;    
+    return data;
   }
 
   public static Map<String, String> parseArguments(String[] args) {

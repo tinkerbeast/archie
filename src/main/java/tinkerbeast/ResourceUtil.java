@@ -1,7 +1,6 @@
 package tinkerbeast;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
@@ -9,16 +8,22 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
+
 public class ResourceUtil {
 
-    Path basePath_;
+    private static Logger logger_ = LoggerFactory.getLogger(ResourceUtil.class);
 
-    ResourceUtil(String base) throws IOException {
+    private Path basePath_;
+
+    public ResourceUtil(String base) throws IOException {
         try {
             URI baseUri = ResourceUtil.class.getClassLoader().getResource(base).toURI();
             if (baseUri.getScheme().equals("jar")) {
@@ -34,12 +39,12 @@ public class ResourceUtil {
 
     private static void walk_(String root, URI uri, int depth) throws IOException {
         Path resourcePath;
-        if (uri.getScheme().equals("jar")) {
-            System.out.format("DEBUG ResourceWalker working with jar%n");
+        boolean uriSchemeIsJar = uri.getScheme().equals("jar");
+        logger_.debug("ResourceWalker working URI scheme determined: uriSchemeIsJar={}", uriSchemeIsJar);
+        if (uriSchemeIsJar) {
             FileSystem fileSystem = FileSystems.newFileSystem(uri, Collections.<String, Object>emptyMap());
             resourcePath = fileSystem.getPath(root);
-        } else {
-            System.out.format("DEBUG ResourceWalker working with files%n");
+        } else {            
             resourcePath = Paths.get(uri);
         }
         try (Stream<Path> walk = Files.walk(resourcePath, depth)) {
@@ -59,11 +64,11 @@ public class ResourceUtil {
         walk_(root, uri, depth);
     }
 
-    public InputStream getResource(String... locator) throws IOException {
-        Path fullPath = Paths.get(basePath_.toString(), locator);
+    public Path getAssetPath(String... locator) throws IOException {        
+        Path fullPath = Paths.get(basePath_.toString(), locator);        
         if (!Files.exists(fullPath)) {
-            throw new IOException("Resource not found : " + fullPath);
+            throw new IOException(String.format("Resource not found %s", fullPath));
         }
-        return Files.newInputStream(fullPath, StandardOpenOption.READ);
+        return fullPath;
     }
 }

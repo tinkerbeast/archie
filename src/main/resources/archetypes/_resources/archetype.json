@@ -1,17 +1,17 @@
 {
   "files": [
-    {"name": "cmake-defaults", "template": "cmake-defaults-latest.cmake", "type": "none"},
-    {"name": "cmake-builds", "template": "cmake-builds-latest.cmake", "type": "none"},
-    {"name": "cmake-protobuf", "template": "cmake-protobuf-latest.cmake", "type": "none"},
-    {"name": "cmake-docs", "template": "cmake-docs-latest.cmake", "type": "none"},
+    {"template": "cmake-defaults-v1", "name": "cmake-defaults-v1.cmake", "type": "noprocess"},
+    {"template": "cmake-builds-v1", "name": "cmake-builds-v1.cmake", "type": "noprocess"},
+    {"template": "cmake-protobuf-v1", "name": "cmake-protobuf-v1.cmake", "type": "noprocess"},
+    {"template": "cmake-docs-v1", "name": "cmake-docs-v1.cmake", "type": "noprocess"},
 
-    {"name": "sphinx-conf", "template": "sphinx-conf-latest.py", "type": "template"},
-    {"name": "docs-index", "template": "docs-index-latest.md", "type": "none"},
-    {"name": "docs-api", "template": "docs-api-latest.md", "type": "template"},
-    {"name": "docs-readme", "template": "docs-readme-latest.md", "type": "template"},
+    {"template": "sphinx-conf-v1", "name": "sphinx-conf-v1.py", "type": "preprocess"},
+    {"template": "docs-index-v1", "name": "docs-index-v1.md", "type": "noprocess"},
+    {"template": "docs-api-v1", "name": "docs-api-v1.md", "type": "preprocess"},
+    {"template": "docs-readme-v1", "name": "docs-readme-v1.md", "type": "preprocess"},
 
-    {"name": "cpp-header", "template": "cpp-header-latest.h", "type": "template"},
+    {"template": "cpp-header-v1", "name": "cpp-header-v1.h", "type": "preprocess"},
 
-    {"name": "cross-gcc-10-aarch64-linux", "template": "Toolchain-gcc-10-aarch64-linux.cmake", "type": "none"}
+    {"template": "cross-gcc-10-aarch64-linux", "name": "Toolchain-gcc-10-aarch64-linux.cmake", "type": "noprocess"}
     ]
 }
