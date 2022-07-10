@@ -34,6 +34,12 @@
 			<artifactId>commons-cli</artifactId>
 			<version>1.4</version>
 		</dependency>
+		<dependency>
+			<!-- picocli -https://picocli.info/ -->
+			<groupId>info.picocli</groupId>
+			<artifactId>picocli</artifactId>
+			<version>4.6.3</version>
+		  </dependency>
 
 		<dependency>
 			<!-- Mustache implementation - https://github.com/spullara/mustache.java -->
