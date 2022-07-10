@@ -5,51 +5,50 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import tinkerbeast.generators.ArchetypeGenerator;
 import tinkerbeast.generators.Config;
 
-public class App {
+@SpringBootApplication
+public class App implements CommandLineRunner {
 
-  private static Logger logger_ = LoggerFactory.getLogger(ArchetypeGenerator.class);
+	public static void main(String[] args) {
+		SpringApplication.run(App.class, args);
+	}
 
-  static void run(String[] args) throws IOException {
-    Map<String, String> options = ArgumentParser.parseArguments(args);
-    if (options != null) {
-      ArchetypeGenerator generator = new ArchetypeGenerator(
-          options.get("provider"), options.get("archetype"), options.get("version"));
-      generator.generateArchetype(
-          options.get("namespace"), options.get("project"), Paths.get(options.get("output")));
-    }    
-  }
+	static void run_cli(String[] args) throws IOException {
+		Map<String, String> options = ArgumentParser.parseArguments(args);
+		if (options != null) {
+			ArchetypeGenerator generator = new ArchetypeGenerator(
+					options.get("provider"), options.get("archetype"), options.get("version"));
+			generator.generateArchetype(
+					options.get("namespace"), options.get("project"), Paths.get(options.get("output")));
+		}
+	}
 
-  static void run_predefined() throws IOException {
-    Map<String, String> options = new HashMap<>();
-    options.put("archetype", "cpp-cmake-simple");
-    options.put("provider", Config.ARCHETYPE_DEFAULT_PROVIDER);
-    options.put("namespace", "org.example");
-    options.put("project", "myProject");
-    options.put("output", System.getProperty("user.dir"));
-    options.put("version", Config.ARCHETYPE_DEFAULT_VERSION);
+	static void run_predefined() throws IOException {
+		Map<String, String> options = new HashMap<>();
+		options.put("archetype", "cpp-cmake-simple");
+		options.put("provider", Config.ARCHETYPE_DEFAULT_PROVIDER);
+		options.put("namespace", "org.example");
+		options.put("project", "myProject");
+		options.put("output", System.getProperty("user.dir"));
+		options.put("version", Config.ARCHETYPE_DEFAULT_VERSION);
 
-    if (options != null) {
-      ArchetypeGenerator generator = new ArchetypeGenerator(
-          options.get("provider"), options.get("archetype"), options.get("version"));
-      generator.generateArchetype(
-          options.get("namespace"), options.get("project"), Paths.get(options.get("output")));
-    }
-  }
+		if (options != null) {
+			ArchetypeGenerator generator = new ArchetypeGenerator(
+					options.get("provider"), options.get("archetype"), options.get("version"));
+			generator.generateArchetype(
+					options.get("namespace"), options.get("project"), Paths.get(options.get("output")));
+		}
+	}
 
-  public static void main(String[] args) throws Exception  {
-      logger_.trace("A TRACE Message");
-      logger_.debug("A DEBUG Message");
-      logger_.info("An INFO Message");
-      logger_.warn("A WARN Message");
-      logger_.error("An ERROR Message");
+	@Override
+	public void run(String... args) throws Exception {		
+		run_cli(args);
+	}
 
-      //run_predefined();
-      run(args);
-  }
 }
