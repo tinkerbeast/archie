@@ -9,22 +9,22 @@
     {"name": "{{cmakeNamespace}}/README.md", "template": "docs-readme", "type": "resource"},
 
 
-    {"name": "{{cmakeNamespace}}", "template": "archie-cpp-cmake-subproject-latest", "type": "archetype",
+    {"name": "{{cmakeNamespace}}", "template": "cpp-cmake-subproject", "type": "archetype",
       "data" : {
         "namespace": "{{namespace}}A", "project": "{{project}}X"
       }
     },
-    {"name": "{{cmakeNamespace}}", "template": "archie-cpp-cmake-subproject-latest", "type": "archetype",
+    {"name": "{{cmakeNamespace}}", "template": "cpp-cmake-subproject", "type": "archetype",
       "data" : {
         "namespace": "{{namespace}}B", "project": "{{project}}Y"
       }
     },
-    {"name": "{{cmakeNamespace}}", "template": "archie-cpp-cmake-subproject-latest", "type": "archetype",
+    {"name": "{{cmakeNamespace}}", "template": "cpp-cmake-subproject", "type": "archetype",
       "data" : {
         "namespace": "{{namespace}}C", "project": "{{project}}X"
       }
     },
-    {"name": "{{cmakeNamespace}}", "template": "archie-cpp-cmake-subproject-latest", "type": "archetype",
+    {"name": "{{cmakeNamespace}}", "template": "cpp-cmake-subproject", "type": "archetype",
       "data" : {
         "namespace": "{{namespace}}D", "project": "{{project}}Y"
       }

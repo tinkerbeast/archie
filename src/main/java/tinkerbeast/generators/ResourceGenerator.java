@@ -25,7 +25,7 @@ class ResourceGenerator {
 
   private static Logger logger_ = LoggerFactory.getLogger(ResourceGenerator.class);
 
-  private static Map<String, ResourceGenerator> providers_ = new HashMap<>();
+  private static Map<String, ResourceGenerator> providers_ = new HashMap<>(); // Avoids regenerating multiple ResourceGenerator-s
   
   private ResourceUtil ru_;
   private Map<String, Path> resourceData_;
@@ -35,42 +35,46 @@ class ResourceGenerator {
     this(Config.ARCHETYPE_DEFAULT_PROVIDER);
   }
 
-  private ResourceGenerator(String provider) throws IOException {
-    Path resources = Paths.get(Config.providerToResource.get(provider), Config.RESOURCE_DIRECTORY);
-    logger_.info("Provider bound to path : provider={} path={}", provider, resources);
+  private ResourceGenerator(String provider) throws IOException {    
+    Path resources = Paths.get(Config.providerToResource.get(provider), Config.RESOURCE_DIRECTORY);    
+    logger_.info("## Creating resource cache ## : provider={} path={}", provider, resources);
     this.ru_ = new ResourceUtil(resources.toString());
     this.resourceData_ = new HashMap<>();
     this.lookup_ = new Trie<String>();
     this.createResourceMap_();
+    
   }
 
-  public static void usageHint(String provider) throws IOException {
+  public static ResourceGenerator getGenerator(String provider) throws IOException {
     // Resource lookup request.
-    logger_.info("Provider might be used soon : provider={}", provider);
+    logger_.debug("Instance might be used soon : provider={}", provider);
     ResourceGenerator p = providers_.get(provider);
     if (null == p) {
       p = new ResourceGenerator(provider);
       providers_.put(provider, p);
     }
+    return p;
   }
 
-  public static Path get(String provider, String resource) throws IOException {
+  public Path get(String resource) throws IOException {    
+    return resourceData_.get(this.lookup(resource));
+  }
+
+  public String lookup(String resource) {
     // Resource lookup request.
-    logger_.info("Resource lookup request : provider={} resource={}", provider, resource);
-    ResourceGenerator p = providers_.get(provider);
-    if (null == p) {
-      p = new ResourceGenerator(provider);
-      providers_.put(provider, p);
-    }
+    logger_.debug("Resource lookup request : resource={}", resource);
     // Resource lookup response or exception on null.
-    List<String> matches = p.lookup_.get(resource);
-    Collections.sort(matches);
+    List<String> matches = lookup_.get(resource);
     logger_.debug("Resource lookup response : matches={}", matches);
+    if (matches.isEmpty()) {
+      return null;
+    }
     // Return the most recent version of the resource.
+    Collections.sort(matches);
     String latestResource = matches.get(matches.size() - 1);
-    return p.resourceData_.get(latestResource);
+    return latestResource;
   }
-  
+
   private void createResourceMap_() throws IOException {
     // TODO: suffix validation.
     //  String[] xx = new String[]{"v1", "v10", "v2", "v22", "v222", "v2.2", "v2.2.2", "v-10", "v-20"};
@@ -84,11 +88,11 @@ class ResourceGenerator {
       List<ArchetypeGenerator.FileTemplate> files = mapper.convertValue(fileNode,
           new TypeReference<List<ArchetypeGenerator.FileTemplate>>() {});
       for (FileTemplate fl : files) {        
-        logger_.debug("Provider resource mapping : alias={} path={}", fl.template, fl.name);
         Path resPath = ru_.getAssetPath(fl.name); 
         resourceData_.put(fl.template, resPath);
         lookup_.put(fl.template);
       }
+      logger_.debug("Resource mapping created : mapping={}", resourceData_);
     }
   }
   

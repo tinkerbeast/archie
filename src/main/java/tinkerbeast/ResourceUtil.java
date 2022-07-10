@@ -1,6 +1,7 @@
 package tinkerbeast;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
@@ -9,15 +10,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
-import java.util.Iterator;
-import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.mustachejava.MustacheResolver;
 
 
-public class ResourceUtil {
+
+public class ResourceUtil  {
 
     private static Logger logger_ = LoggerFactory.getLogger(ResourceUtil.class);
 
@@ -37,6 +38,7 @@ public class ResourceUtil {
         }
     }
 
+    /*
     private static void walk_(String root, URI uri, int depth) throws IOException {
         Path resourcePath;
         boolean uriSchemeIsJar = uri.getScheme().equals("jar");
@@ -63,6 +65,7 @@ public class ResourceUtil {
         URI uri = ResourceUtil.class.getResource(root).toURI();
         walk_(root, uri, depth);
     }
+    */
 
     public Path getAssetPath(String... locator) throws IOException {        
         Path fullPath = Paths.get(basePath_.toString(), locator);        
@@ -71,4 +74,6 @@ public class ResourceUtil {
         }
         return fullPath;
     }
+
+    
 }

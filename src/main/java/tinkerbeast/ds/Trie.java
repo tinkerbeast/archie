@@ -49,25 +49,23 @@ public class Trie<K extends CharSequence> {
     public List<K> get(K arg0) {
         
         CharSequence key = (CharSequence)arg0;
+        ArrayList<K> items = new ArrayList<>();
         
         Node cur = root_;
         for(int i = 0; i < key.length(); ++i)  {                        
             char ch = key.charAt(i);
-            Node next = cur.next.get(ch);
-            if (null == next) {
-                break;
-            }
-            cur = next;
+            cur = cur.next.get(ch);
+            if (null == cur) {                
+                return items;
+            }            
         }
 
         //System.out.format("DEBUG Trie.get k=%s cur=%s %n", key, cur);
-        ArrayList<K> items = new ArrayList<>();
-        if (null != cur) {
-            if (cur.index != -1) {
-                items.add(keySet.get(cur.index));                
-            }
-            get_recurseive(cur, items);
-        }        
+        if (cur.index != -1) {
+            items.add(keySet.get(cur.index));                
+        }
+        get_recurseive(cur, items);
+                
         return items;
     }
     

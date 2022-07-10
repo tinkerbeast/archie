@@ -49,6 +49,7 @@ public class App {
       logger_.warn("A WARN Message");
       logger_.error("An ERROR Message");
 
+      //run_predefined();
       run(args);
   }
 }
