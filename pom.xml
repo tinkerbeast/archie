@@ -7,15 +7,15 @@
 		<version>2.7.1</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>tinkerbeast</groupId>
+	<groupId>com.github.tinkerbeast</groupId>
 	<artifactId>archie</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>archie</name>
 	<url>https://github.com/tinkerbeast/archie</url>
 	<description>archie is an boilerplate code generation system for C++ and CMake based projects.</description>
-	<!--<properties>
+	<properties>
 		<java.version>11</java.version>
-	</properties>-->
+	</properties>
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

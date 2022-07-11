@@ -1,4 +1,4 @@
-package tinkerbeast.ds;
+package com.github.tinkerbeast.archie.ds;
 
 import java.util.Collection;
 import java.util.Map;

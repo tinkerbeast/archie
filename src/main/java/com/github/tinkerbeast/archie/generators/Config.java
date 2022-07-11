@@ -1,4 +1,4 @@
-package tinkerbeast.generators;
+package com.github.tinkerbeast.archie.generators;
 
 import java.util.HashMap;
 import java.util.Map;

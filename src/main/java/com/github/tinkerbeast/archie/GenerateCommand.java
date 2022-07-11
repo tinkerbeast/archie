@@ -1,15 +1,16 @@
-package tinkerbeast;
+package com.github.tinkerbeast.archie;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.concurrent.Callable;
 
+import com.github.tinkerbeast.archie.generators.ArchetypeGenerator;
+import com.github.tinkerbeast.archie.generators.Config;
+
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
-import tinkerbeast.generators.ArchetypeGenerator;
-import tinkerbeast.generators.Config;
 
 @Command(name = "archie", mixinStandardHelpOptions = true, version = "???? version", description = "Genreate a new archetype.")
 public class GenerateCommand implements Callable<Integer> {

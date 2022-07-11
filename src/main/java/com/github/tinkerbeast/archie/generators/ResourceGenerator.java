@@ -1,4 +1,4 @@
-package tinkerbeast.generators;
+package com.github.tinkerbeast.archie.generators;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -16,10 +16,10 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tinkerbeast.archie.ResourceUtil;
+import com.github.tinkerbeast.archie.ds.Trie;
+import com.github.tinkerbeast.archie.generators.ArchetypeGenerator.FileTemplate;
 
-import tinkerbeast.ResourceUtil;
-import tinkerbeast.ds.Trie;
-import tinkerbeast.generators.ArchetypeGenerator.FileTemplate;
 
 class ResourceGenerator {
 

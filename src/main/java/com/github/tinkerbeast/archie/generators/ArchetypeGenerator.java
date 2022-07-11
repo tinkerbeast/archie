@@ -1,4 +1,4 @@
-package tinkerbeast.generators;
+package com.github.tinkerbeast.archie.generators;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -25,11 +25,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
-
-import tinkerbeast.ResourceUtil;
-import tinkerbeast.ds.ComputableMap;
-import tinkerbeast.ds.LruCache;
-
+import com.github.tinkerbeast.archie.ResourceUtil;
+import com.github.tinkerbeast.archie.ds.ComputableMap;
+import com.github.tinkerbeast.archie.ds.LruCache;
 
 
 public class ArchetypeGenerator {

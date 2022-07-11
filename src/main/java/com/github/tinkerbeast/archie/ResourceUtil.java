@@ -1,7 +1,6 @@
-package tinkerbeast;
+package com.github.tinkerbeast.archie;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
@@ -13,8 +12,6 @@ import java.util.Collections;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.github.mustachejava.MustacheResolver;
 
 
 
