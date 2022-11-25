@@ -146,7 +146,7 @@ public class ArchetypeGenerator implements Generator {
       Files.createDirectories(e);
     }    
 
-    // Handle templates    
+    // Preprocess templates.
     List<TemplateConversion> templates = entries.stream()
       .filter(e -> e.type.equals("template"))
       .map(e -> {
@@ -157,8 +157,7 @@ public class ArchetypeGenerator implements Generator {
         return new TemplateConversion(templateName, templatePath, outPath);
       })
       .collect(Collectors.toUnmodifiableList());
-
-    // Handle resources
+    // Preprocess resources.
     List<TemplateConversion> resources = entries.stream()
     .filter(e -> e.type.equals("resource"))
     .map(e -> {
@@ -171,14 +170,15 @@ public class ArchetypeGenerator implements Generator {
     })
     .collect(Collectors.toUnmodifiableList());
     
+    // Do template conversion.
     List<TemplateConversion> all = Stream.of(templates, resources)
         .flatMap(Collection::stream)
-        .collect(Collectors.toList());
-    
+        .collect(Collectors.toList());    
     for (TemplateConversion e : all) {
       logger_.debug("Compiling and writing processed output : name={} in={} out={}", 
         e.name, e.input, e.output);
-      Mustache template = null;      
+      Mustache template = null;
+      // TODO: Mustache cache for global compilation TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
       try (Reader reader = Files.newBufferedReader(e.input)) {
         template = templateEngine_.compile(reader, e.name);
       }
@@ -187,8 +187,39 @@ public class ArchetypeGenerator implements Generator {
         template.execute(writer, data);
       }
     }
-    // Handle resources - TODO
+    
     // Handle recursion - TODO
+    entries.stream()
+    .filter(e -> e.type.equals("archetype"))
+    .forEach(e -> {
+      // Provider, archetype, version
+      String qualifiedArchetype = e.template;
+      String[] archetypeAndProvider = qualifiedArchetype.split("::");
+      String archetype;
+      String provider;
+      if (archetypeAndProvider.length == 1) {
+          archetype = archetypeAndProvider[0];
+          provider = Config.ARCHETYPE_DEFAULT_PROVIDER;
+      } else {
+          archetype = archetypeAndProvider[1];
+          provider = archetypeAndProvider[0];
+      }
+      String version = e.data.getOrDefault("version", Config.ARCHETYPE_DEFAULT_VERSION);
+      logger_.debug("Recursive archetype : fqan={}::{}@{}", provider, archetype, version);
+      // Namespace, project, outRoot
+      String ns = ArchetypeGenerator.stringTemplateToString(e.data.get("namespace"), data);
+      String pr = ArchetypeGenerator.stringTemplateToString(e.data.get("project"), data);
+      String outFile = ArchetypeGenerator.stringTemplateToString(e.name, data);
+      Path out = outRoot.resolve(outFile);
+      logger_.debug("Recursive archetype generation params : ns={} pr={} out={}", 
+        ns, pr, out);
+
+      try {
+        new ArchetypeGenerator(provider, archetype, version).generateArchetype(ns, pr, out);
+      } catch(IOException ex) {
+        throw new RuntimeException(ex);
+      }
+    });
 
   }
 
@@ -264,17 +295,17 @@ public class ArchetypeGenerator implements Generator {
     StringWriter writer = new StringWriter();
     Mustache xx = new DefaultMustacheFactory().compile(reader, templateName);
 
-    Writer out = xx.execute(writer, data)/* .flush() */; // TODO: can we do without flush?
+    xx.execute(writer, data)/* .flush() */; // TODO: can we do without flush?
     return writer.toString();
   }
-
+/*
   Mustache generateTemplate(String name, Path resource) throws IOException {
-    try (BufferedReader reader = Files.newBufferedReader(resource)) {
+    try (Reader reader = Files.newBufferedReader(resource)) {
       Mustache template = templateEngine_.compile(reader, name);
       return template;
     }
   }
-/*
+
   void generateFile(Writer writer, final Mustache template, final Map<String, String> data)
       throws IOException {
 
