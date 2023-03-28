@@ -54,8 +54,7 @@ macro(archie_cxx_deps_segregate shared_libs interface_libs)
 endmacro()
 
 # cc_shared_library(namespace target
-#                   [SRCS ...]
-#                   [INCL_PRIV ...]
+#                   [SRCS ...] // c,cxx source files and private headers
 #                   [INCL_PUBL ...]
 #                   [DEPS_PRIV ...]
 #                   [DEPS_PUBL ...]
@@ -63,7 +62,7 @@ endmacro()
 # )
 function(archie_cxx_library_shared namespace target)
   # Argument parsing, validation and defaults
-  set(multiValueArgs SRCS INCL_PRIV INCL_PUBL DEPS_PRIV DEPS_PUBL COPTS)
+  set(multiValueArgs SRCS INCL_PUBL DEPS_PRIV DEPS_PUBL COPTS)
   cmake_parse_arguments(CXX_LIB "" "" "${multiValueArgs}" ${ARGN})
   if(NOT CXX_LIB_SRCS)
     message(FATAL_ERROR "archie_cxx_shared_library needs SRCS parameters")
@@ -74,6 +73,7 @@ function(archie_cxx_library_shared namespace target)
   # Make shared library target
   set(lib_name "${namespace}-${target}")
   add_library(${lib_name} SHARED ${CXX_LIB_SRCS})
+  target_sources(${lib_name} PRIVATE ${CXX_LIB_SRCS})
   target_compile_options(${lib_name} PRIVATE ${CXX_LIB_COPTS})
   # Coverage related flags
   # TODO(rishin): support VC++ also
@@ -82,10 +82,7 @@ function(archie_cxx_library_shared namespace target)
     target_compile_options(${lib_name} PRIVATE --coverage)
     target_link_options("${lib_name}" PRIVATE --coverage)
   endif()
-  # Add include directories
-  if(CXX_LIB_INCL_PRIV)
-    target_include_directories(${lib_name} PRIVATE ${CXX_LIB_INCL_PRIV})
-  endif()
+  # Add include directories  
   if(CXX_LIB_INCL_PUBL)
     target_include_directories(${lib_name} PUBLIC ${CXX_LIB_INCL_PUBL})
   endif()
@@ -104,6 +101,44 @@ function(archie_cxx_library_shared namespace target)
   # Alias the library to have a namespace
   add_library(${namespace}::${target} ALIAS ${lib_name})
 endfunction()
+
+# cc_shared_library(namespace target
+#                   [SRCS ...]
+#                   [INCL_PUBL ...]
+#                   [DEPS_PUBL ...]
+#                   [COPTS]
+# )
+function(archie_cxx_library_header namespace target)
+  # Argument parsing, validation and defaults
+  set(multiValueArgs SRCS INCL_PUBL DEPS_PUBL COPTS)
+  cmake_parse_arguments(CXX_HDR "" "" "${multiValueArgs}" ${ARGN})
+  if(NOT CXX_HDR_SRCS)
+    message(FATAL_ERROR "archie_cxx_header_library needs SRCS parameters")
+  endif()
+  if(NOT CXX_HDR_COPTS)
+    message(FATAL_ERROR "archie_cxx_header_library needs COPTS parameters")
+  endif()
+  # Make header library targets
+  set(lib_name "${namespace}-${target}")
+  add_library(${lib_name} INTERFACE)
+  target_sources(${lib_name} INTERFACE ${CXX_HDR_SRCS})
+  target_compile_options(${lib_name} INTERFACE ${CXX_HDR_COPTS})
+  # add public header deps
+  if(CXX_HDR_INCL_PUBL)
+    target_include_directories(${lib_name} INTERFACE ${CXX_HDR_INCL_PUBL})
+  endif()
+  # Add public dependencies
+  archie_cxx_deps_segregate(shared_libs interface_libs ${CXX_HDR_DEPS_PUBL})
+  if(shared_libs)
+    target_link_libraries(${lib_name} PUBLIC ${shared_libs})
+  endif()
+  if(interface_libs)
+    target_link_libraries(${lib_name} INTERFACE ${interface_libs})
+  endif()
+  # Alias the library to have a namespace
+  add_library(${namespace}::${target} ALIAS ${lib_name})
+endfunction()
+
 
 # cc_binary(namespace target
 #           [SRCS ...]
