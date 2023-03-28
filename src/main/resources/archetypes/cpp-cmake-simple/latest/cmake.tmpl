@@ -28,17 +28,20 @@ archie_cxx_library_shared("{{cmakeNamespace}}" "{{project}}"
     SRCS      ${CMAKE_CURRENT_SOURCE_DIR}/{{project}}.cpp
               ${CMAKE_CURRENT_SOURCE_DIR}/{{project}}.h
     INCL_PUBL ${CMAKE_CURRENT_SOURCE_DIR}/
+    COPTS     ${ARCHIE_CXX_COPTS}
 )
 
 archie_cxx_executable("{{cmakeNamespace}}" "{{project}}-main"
     SRCS      ${CMAKE_CURRENT_SOURCE_DIR}/{{project}}_main.cpp
     DEPS_PRIV {{cmakeNamespace}}::{{project}}
+    COPTS     ${ARCHIE_CXX_COPTS}
 )
 
 if(ARCHIE_TESTING_ENABLED)
   archie_cxx_test("{{cmakeNamespace}}" "{{project}}-test"
     SRCS      ${CMAKE_CURRENT_SOURCE_DIR}/{{project}}_test.cpp
     DEPS_PRIV {{cmakeNamespace}}::{{project}}
+    COPTS     ${ARCHIE_CXX_COPTS}
   )
 endif()
 

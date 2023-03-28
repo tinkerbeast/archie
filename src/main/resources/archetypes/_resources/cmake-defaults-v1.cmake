@@ -8,11 +8,12 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     # See https://stackoverflow.com/questions/399850/best-compiler-warning-level-for-c-c-compilers/401276#401276
     set(ARCHIE_ERROR_FLAGS -pedantic -pedantic-errors -Wall -Werror -Wcast-align -Wcast-qual -Wconversion -Wdisabled-optimization -Wextra -Wfloat-equal -Wformat=2 -Wformat-nonliteral -Wformat-security -Wformat-y2k -Wimport -Winit-self -Winline -Winvalid-pch -Wmissing-field-initializers -Wmissing-format-attribute -Wmissing-include-dirs -Wmissing-noreturn -Wnon-virtual-dtor -Wpacked -Wpointer-arith -Wredundant-decls -Wsign-conversion -Wstack-protector -Wstrict-aliasing=2 -Wunreachable-code -Wunused -Wunused-parameter -Wvariadic-macros -Wwrite-strings -Wswitch-default -Wswitch-enum -Wdeprecated-copy-dtor -Wunused-value -Wshadow)
     # perf related
-    list(APPEND ARCHIE_ERROR_FLAGS -fno-omit-frame-pointer)
+    set(ARCHIE_DEBUGABILITY_FLAGS -fno-omit-frame-pointer)
     # security related
     # TODO(rishin): Make fortify source level 2 work cmake
     # TODO(rishin): -DCMAKE_POSITION_INDEPENDENT_CODE
-    list(APPEND ARCHIE_ERROR_FLAGS -fPIE -fPIC -D_FORTIFY_SOURCE=1)
+    set(ARCHIE_SECURITY_FLAGS -fPIE -fPIC -D_FORTIFY_SOURCE=1)
+    set(ARCHIE_CXX_COPTS "${ARCHIE_ERROR_FLAGS};${ARCHIE_DEBUGABILITY_FLAGS};${ARCHIE_SECURITY_FLAGS}")
 endif()
 # TODO(rishin): add flags for Clang
 # TODO(rishin): add flags for VC++

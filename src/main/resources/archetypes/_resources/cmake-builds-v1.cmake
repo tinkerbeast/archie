@@ -59,7 +59,7 @@ endmacro()
 #                   [INCL_PUBL ...]
 #                   [DEPS_PRIV ...]
 #                   [DEPS_PUBL ...]
-#                   [COPTS = ARCHIE_ERROR_FLAGS]
+#                   [COPTS]
 # )
 function(archie_cxx_library_shared namespace target)
   # Argument parsing, validation and defaults
@@ -69,7 +69,7 @@ function(archie_cxx_library_shared namespace target)
     message(FATAL_ERROR "archie_cxx_shared_library needs SRCS parameters")
   endif()
   if(NOT CXX_LIB_COPTS)
-    set(CXX_LIB_COPTS ${ARCHIE_ERROR_FLAGS})
+    message(FATAL_ERROR "archie_cxx_shared_library needs COPTS parameters")
   endif()
   # Make shared library target
   set(lib_name "${namespace}-${target}")
@@ -77,6 +77,7 @@ function(archie_cxx_library_shared namespace target)
   target_compile_options(${lib_name} PRIVATE ${CXX_LIB_COPTS})
   # Coverage related flags
   # TODO(rishin): support VC++ also
+  # TODO(rishin): Possibly move this to COPTS?
   if("Coverage" STREQUAL "${ARCHIE_BUILD_TYPE}")
     target_compile_options(${lib_name} PRIVATE --coverage)
     target_link_options("${lib_name}" PRIVATE --coverage)
@@ -108,7 +109,7 @@ endfunction()
 #           [SRCS ...]
 #           [DEPS_PRIV ...]
 #           [DEPS_PUBL ...]
-#           [COPTS = ARCHIE_ERROR_FLAGS]
+#           [COPTS]
 #           [EXCLUDE_FROM_ALL]
 # )
 function(archie_cxx_executable namespace target)
@@ -120,7 +121,7 @@ function(archie_cxx_executable namespace target)
     message(FATAL_ERROR "archie_cxx_executable needs SRCS parameter")
   endif()
   if(NOT CXX_EXE_COPTS)
-    set(CXX_EXE_COPTS ${ARCHIE_ERROR_FLAGS})
+    message(FATAL_ERROR "archie_cxx_shared_library needs COPTS parameters")
   endif()
   # Make executable target
   set(exec_name "${namespace}-${target}")
