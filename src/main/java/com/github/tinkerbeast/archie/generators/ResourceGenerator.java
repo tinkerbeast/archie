@@ -10,17 +10,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.management.RuntimeErrorException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.github.tinkerbeast.archie.JarUtil;
 import com.github.tinkerbeast.archie.ds.Trie;
-import com.github.tinkerbeast.archie.generators.ArchetypeGenerator.FileTemplate;
+
 
 
 class ResourceGenerator implements Generator {
@@ -59,7 +57,7 @@ class ResourceGenerator implements Generator {
     }
   }
 
-  public static ResourceGenerator getGenerator(String provider) {
+  public static ResourceGenerator instance(String provider) {
     // Resource lookup request.    
     ResourceGenerator p = providers_.get(provider);
     if (null == p) {
@@ -74,11 +72,9 @@ class ResourceGenerator implements Generator {
   }
 
   public String lookup(String resource) {
-    // Resource lookup request.
-    logger_.debug("Resource lookup request : resource={}", resource);
     // Resource lookup response or exception on null.
     List<String> matches = lookup_.get(resource);
-    logger_.debug("Resource lookup response : matches={}", matches);
+    logger_.debug("Resource lookup response : resource={} matches={}", resource, matches);
     if (matches.isEmpty()) {
       return null;
     }
@@ -88,6 +84,12 @@ class ResourceGenerator implements Generator {
     return latestResource;
   }
 
+  /**
+   * Populates resourceData_ and lookup_ with a map from name to path.
+   * Example entry: cmake-protobuf-v1=.../archetypes/_resources/cmake-protobuf-v1.cmake
+   * 
+   * @throws IOException
+   */
   private void createResourceMap_() throws IOException {
     // TODO: suffix validation.
     //  String[] xx = new String[]{"v1", "v10", "v2", "v22", "v222", "v2.2", "v2.2.2", "v-10", "v-20"};
@@ -98,9 +100,9 @@ class ResourceGenerator implements Generator {
       ObjectMapper mapper = new ObjectMapper();
       JsonNode jsonMap = mapper.readValue(in, JsonNode.class);
       JsonNode fileNode = jsonMap.get("files");
-      List<ArchetypeGenerator.FileTemplate> files = mapper.convertValue(fileNode,
-          new TypeReference<List<ArchetypeGenerator.FileTemplate>>() {});
-      for (FileTemplate fl : files) {        
+      List<ArchetypeGenerator.ArchetypeEntry> files = mapper.convertValue(fileNode,
+          new TypeReference<List<ArchetypeGenerator.ArchetypeEntry>>() {});
+      for (ArchetypeGenerator.ArchetypeEntry fl : files) {        
         Path resPath = jarUtil_.getAssetPath(fl.name); 
         resourceData_.put(fl.template, resPath);
         lookup_.put(fl.template);

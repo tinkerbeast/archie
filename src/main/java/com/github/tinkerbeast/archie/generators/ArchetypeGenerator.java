@@ -28,7 +28,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
-import com.github.mustachejava.MustacheResolver;
 
 import com.github.tinkerbeast.archie.JarUtil;
 import com.github.tinkerbeast.archie.ds.ComputableMap;
@@ -36,18 +35,28 @@ import com.github.tinkerbeast.archie.ds.LruCache;
 
 public class ArchetypeGenerator implements Generator {
 
-  static class FileTemplate {
+  static class ArchetypeEntry {
     public String name;
     public String template;
     public String type;
     public Map<String, String> data;
   }
 
+  class TemplateConversion {
+    String name;
+    Path input;
+    Path output;
+
+    TemplateConversion(String name, Path input, Path output) {
+      this.name = name;
+      this.input = input;
+      this.output = output;
+    }
+  }
+
   private static Logger logger_ = LoggerFactory.getLogger(ArchetypeGenerator.class);
 
-  //private static Map<String, Mustache> cache_ = new HashMap<>();
-
-  private static Map<String, Generator> generatorCache_ = new LruCache<>(20);
+  private static Map<String, Generator> archetypeCache_ = new LruCache<>(20);
 
   private String provider_;
   private String archetype_;
@@ -56,13 +65,12 @@ public class ArchetypeGenerator implements Generator {
   private String fqan_;
   private String fqprn_;
   private JarUtil jarUtil_;
-  private ResourceGenerator resGen_;
   private MustacheFactory templateEngine_;
 
   public ArchetypeGenerator(String provider, String archetype, String version)
       throws IOException {
     // tentative fqan naming
-    // com.github/tinkerbeast/archie.git::archie-cpp-cmake-twolevel::latest
+    // com.github/tinkerbeast/archie.git::cpp-cmake-twolevel::latest
     // org.example::somearchetype::version
     // fqan - fully qualified archetype naming
     // constraint - provider, archetype name, version may not contain ::
@@ -80,10 +88,6 @@ public class ArchetypeGenerator implements Generator {
     this.archetype_ = archetype;
     this.version_ = version;
 
-    // Utility to load configs and template from jar package.
-    Path archetypePath = Paths.get(Config.providerToRoot.get(provider), archetype, version);
-    this.jarUtil_ = new JarUtil(archetypePath.toString());
-
     // Forming fully qualified names helps with caching.
     // Fqan naming format is <provider>::<archetype>@<version>. Example -
     //   com.github/tinkerbeast/archie.git::archie-cpp-cmake-twolevel::latest
@@ -92,45 +96,47 @@ public class ArchetypeGenerator implements Generator {
 
     // Fqrn naming format is <provider>::resource
     // Getting the fqrn also creates the resource generator if necessary.
-    this.fqprn_ = ResourceGenerator.getGenerator(provider).getFqrn();
+    this.fqprn_ = ResourceGenerator.instance(provider).getFqrn();
+
+    // Utility to load configs and template from jar package.
+    Path archetypePath = Paths.get(Config.providerToRoot.get(provider), archetype, version);
+    this.jarUtil_ = new JarUtil(archetypePath.toString());
+    logger_.debug("jar util initialised : fqan={} jarRoot={}", this.fqan_, archetypePath);
     
-    
-    // Template engine with custome name lookup.
-    /*
-    templateEngine_ = new DefaultMustacheFactory(new MustacheResolver() {
-      @Override
-      public Reader getReader(String resourceName) {
-        logger_.warn("Mustache resolver called : fqan={} resourceName={}", fqan_, resourceName);
-        return null; // TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
-        // TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
-      }
-    });
-    */
+    // Template engine with custome name lookup. // TODO: make this global
     templateEngine_ = new DefaultMustacheFactory();
 
   }
 
-  class TemplateConversion {
-    String name;
-    Path input;
-    Path output;
-
-    TemplateConversion(String name, Path input, Path output) {
-      this.name = name;
-      this.input = input;
-      this.output = output;
-    }
-  }
+  
 
   public void generateArchetype(String namespace, String project, Path outRoot) 
     throws IOException {
 
-    Map<String, String> data = populateData_(namespace, project);
+    // Template parameter data.
+    Map<String, String> staticData = populateData_(namespace, project);
+    ComputableMap<String, String> data = new ComputableMap<>(key -> {
+      if (key.startsWith("::resource/")) {        
+        String template = key.substring("::resource/".length());
+        Path templatePath = ResourceGenerator.instance(this.provider_).resolveResourcePath(template);
+        String templateName = this.fqprn_ + "/" + template;
+        try {
+          String out = fileTemplateToString_(templatePath, templateName, staticData);
+          return out;
+        } catch(IOException e) {
+          logger_.error("IOException while processing partial ::resource/ : key={}", key);
+          return String.format("# ERROR key=%s", key);
+        }
+      } else {
+        return staticData.get(key);
+      }
+    });
 
+    // Get entries from the archetype.json descriptor.
     Path archetypeJsonPath = jarUtil_.getAssetPath(Config.ARCHETYPE_DESCRIPTOR_FILENAME);
     logger_.debug("archetype.json will be read for given archetype : fqan={} jsonpath={}", 
       this.fqan_, archetypeJsonPath);
-    List<FileTemplate> entries = ArchetypeGenerator.getEntries(archetypeJsonPath);
+    List<ArchetypeEntry> entries = ArchetypeGenerator.getEntries(archetypeJsonPath);
     logger_.debug("archetype.json is read : item_count={}", entries.size());
 
     // Handle folders
@@ -143,6 +149,7 @@ public class ArchetypeGenerator implements Generator {
       })
       .collect(Collectors.toUnmodifiableList());
     for (Path e : folders) {
+      logger_.debug("archetype.json directory entry : directory={}", e);
       Files.createDirectories(e);
     }    
 
@@ -150,6 +157,7 @@ public class ArchetypeGenerator implements Generator {
     List<TemplateConversion> templates = entries.stream()
       .filter(e -> e.type.equals("template"))
       .map(e -> {
+        logger_.debug("archetype.json template entry : template={}", e.template);
         Path templatePath = jarUtil_.getAssetPath(e.template);
         String templateName = this.fqan_ + "/" + e.template;
         String outFile = ArchetypeGenerator.stringTemplateToString(e.name, data);
@@ -161,7 +169,8 @@ public class ArchetypeGenerator implements Generator {
     List<TemplateConversion> resources = entries.stream()
     .filter(e -> e.type.equals("resource"))
     .map(e -> {
-      Path templatePath = ResourceGenerator.getGenerator(this.provider_).resolveResourcePath(e.template);
+      logger_.debug("archetype.json resource entry : resource={}", e.template);
+      Path templatePath = ResourceGenerator.instance(this.provider_).resolveResourcePath(e.template);
       String templateName = this.fqprn_ + "/" + e.template;
       String outFile = ArchetypeGenerator.stringTemplateToString(e.name, data);
       Path outPath = outRoot.resolve(outFile);
@@ -177,18 +186,10 @@ public class ArchetypeGenerator implements Generator {
     for (TemplateConversion e : all) {
       logger_.debug("Compiling and writing processed output : name={} in={} out={}", 
         e.name, e.input, e.output);
-      Mustache template = null;
-      // TODO: Mustache cache for global compilation TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
-      try (Reader reader = Files.newBufferedReader(e.input)) {
-        template = templateEngine_.compile(reader, e.name);
-      }
-      Files.createDirectories(e.output.getParent());
-      try (Writer writer = Files.newBufferedWriter(e.output)) {
-        template.execute(writer, data);
-      }
+      fileTemplateToFile_(e.input, e.output, e.name, data);
     }
     
-    // Handle recursion - TODO
+    // Handle recursive archetypes.
     entries.stream()
     .filter(e -> e.type.equals("archetype"))
     .forEach(e -> {
@@ -214,6 +215,7 @@ public class ArchetypeGenerator implements Generator {
       logger_.debug("Recursive archetype generation params : ns={} pr={} out={}", 
         ns, pr, out);
 
+      // TODO TODO TODO cache this
       try {
         new ArchetypeGenerator(provider, archetype, version).generateArchetype(ns, pr, out);
       } catch(IOException ex) {
@@ -228,25 +230,17 @@ public class ArchetypeGenerator implements Generator {
     return String.format("%s::%s@%s", provider, archetype, version);
   }
 
-  private static List<FileTemplate> getEntries(Path archetypeDescriptor) throws IOException {
+  private static List<ArchetypeEntry> getEntries(Path archetypeDescriptor) throws IOException {
     // Parse the archetype.json file.
-    List<FileTemplate> files;
+    List<ArchetypeEntry> files;
     try (Reader reader = Files.newBufferedReader(archetypeDescriptor)) {
       ObjectMapper mapper = new ObjectMapper();
       JsonNode jsonMap = mapper.readValue(reader, JsonNode.class);
       JsonNode fileNode = jsonMap.get("files");
-      files = mapper.convertValue(fileNode, new TypeReference<List<FileTemplate>>() {
+      files = mapper.convertValue(fileNode, new TypeReference<List<ArchetypeEntry>>() {
       });
     }
     return files;
-  }
-
-  private static String formFqrn(String provider, String archetype, String version, String resource) {
-    return String.format("%s/%s", ArchetypeGenerator.formFqan(provider, archetype, version), resource);
-  }
-
-  private String getFqrn(String resource) {
-    return String.format("%s/%s", fqan_, resource);
   }
 
   private Function<String, String> resourceMapper(Map<String, String> data) {
@@ -282,7 +276,7 @@ public class ArchetypeGenerator implements Generator {
                                                                    // Create singleton.
     data.put("time-year", year);
     //
-    logger_.debug("Contextual archetype mapping created : data={}", data);
+    logger_.debug("Template dictionary data populated : data={}", data);
     return data;
   }
 
@@ -298,164 +292,29 @@ public class ArchetypeGenerator implements Generator {
     xx.execute(writer, data)/* .flush() */; // TODO: can we do without flush?
     return writer.toString();
   }
-/*
-  Mustache generateTemplate(String name, Path resource) throws IOException {
-    try (Reader reader = Files.newBufferedReader(resource)) {
-      Mustache template = templateEngine_.compile(reader, name);
-      return template;
+
+  private void fileTemplateToFile_(Path input, Path output, String name, Map<String, String> data) throws IOException {
+    Mustache template = null;
+    // TODO: Mustache cache for global compilation TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
+    try (Reader reader = Files.newBufferedReader(input)) {
+      template = templateEngine_.compile(reader, name);        
+    }
+    Files.createDirectories(output.getParent());
+    try (Writer writer = Files.newBufferedWriter(output)) {
+      template.execute(writer, data);
     }
   }
 
-  void generateFile(Writer writer, final Mustache template, final Map<String, String> data)
-      throws IOException {
-
-    // 1..1 with this
-    Function<String, String> mapper = (String key) -> {
-      if (key.startsWith("::resource/")) { // TODO: resouces from other providers
-        key = key.substring("::resource/".length());
-        String resName = this.resGen_.lookup(key);
-        if (resName == null) {
-          return null;
-        }
-        String fqrn = String.format("%s::*::*::resource/%s", provider_, resName);
-        Mustache tmpl = cache_.get(fqrn);
-        StringWriter out = new StringWriter();
-        if (tmpl == null) {
-          try {
-            Path resPath = this.resGen_.get(key);
-            logger_.warn("Generating fqrn={} path={}", fqrn, resName);
-            tmpl = generateTemplate(fqrn, resPath);
-            cache_.put(fqrn, tmpl);
-
-            tmpl.execute(out, data).flush();
-          } catch (IOException e) {
-            logger_.error(e.getMessage());
-            System.exit(1);
-          }
-        }
-        return out.toString();
-      } else {
-        return data.get(key);
-      }
-    };
-
-    Map<String, String> context = new ComputableMap<>(mapper);
-    template.execute(writer, context);
+  private String fileTemplateToString_(Path input, String name, Map<String, String> data) throws IOException {
+    Mustache template = null;
+    // TODO: Mustache cache for global compilation TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
+    try (Reader reader = Files.newBufferedReader(input)) {
+      template = templateEngine_.compile(reader, name);        
+    }
+    StringWriter writer = new StringWriter();
+    template.execute(writer, data);
+    return writer.toString();
   }
-*/  
-
-  
-/*
-  private void generateArchetype2_(String namespace, String project, Path outRoot, int depth) throws IOException {
-    logger_.info("Generating archetype : namespace={} project={} outRoot={}", namespace, project, outRoot);
-    if (depth > 10) {
-      throw new IOException("Too much recursion in generation of archetypes");
-    }
-
-    // Populate namespace and project related data.
-    Map<String, String> data = populateData(namespace, project);
-
-    // Parse the archetype.json file.
-    Path archetypeDescriptor = jarUtil_.getAssetPath(Config.ARCHETYPE_DESCRIPTOR_FILENAME);
-    List<FileTemplate> entries = ArchetypeGenerator.getEntries(archetypeDescriptor);
-    entries.stream()
-        .filter(e -> e.type.equals("template"))
-        .map(e -> {
-          // Get fully qualified names and path from entry.
-          String fqrn = this.getFqrn(e.template);
-          String filePathParsed = stringTemplateToString(e.name, data);
-          Path out = Paths.get(outRoot.toString(), filePathParsed);
-          Mustache template = cache_.get(fqrn);
-          logger_.debug("Currently generating templte : fqrn={} out={} cached={}", fqrn, out, template);
-          // Create mustache template paired to fqrn.          
-          if (null == template) {
-            template = this.templateEngine_.compile(fqrn);
-            cache_.put(fqrn, template);
-          }
-          return Map.entry(template, out);
-        }).forEach(pair -> {          
-          Path out = pair.getValue();
-          out.toFile().getParentFile().mkdirs();          
-          // 
-          Mustache template = pair.getKey();
-          try (BufferedWriter w = Files.newBufferedWriter(out)) {            
-            template.execute(w, data).flush();
-          } catch (IOException e) {
-            logger_.error("IO error while processing template : template={} out={}", template, out, e);
-            throw new RuntimeException(e);
-          }
-        });
-  }
-
-  private void generateArchetype_(String namespace, String project, Path outRoot, int depth) throws IOException {
-    logger_.info("## Generating archetype ##  : namespace={} project={} outRoot={}", namespace, project, outRoot);
-    if (depth > 10) {
-      throw new IOException("Too much recursion in generation of archetypes");
-    }
-    // Populate namespace and project related data.
-    Map<String, String> data = populateData(namespace, project);
-    // Get the archetype.json.
-    Path archetypeDescriptor = jarUtil_.getAssetPath(Config.ARCHETYPE_DESCRIPTOR_FILENAME);
-    // Parse the archetype.json file.
-    List<FileTemplate> files;
-    try (BufferedReader reader = Files.newBufferedReader(archetypeDescriptor)) {
-      ObjectMapper mapper = new ObjectMapper();
-      JsonNode jsonMap = mapper.readValue(reader, JsonNode.class);
-      JsonNode fileNode = jsonMap.get("files");
-      files = mapper.convertValue(fileNode, new TypeReference<List<FileTemplate>>() {
-      });
-    }
-    for (FileTemplate fl : files) {
-      // The output path where resource will be genreated.
-      String filePathParsed = stringTemplateToString(fl.name, data);
-      Path out = Paths.get(outRoot.toString(), filePathParsed);
-      logger_.debug("File output path determined : file={} path={}", fl.name, out);
-      // Form fully qualified resource name.
-      String fqrn;
-      if (fl.type.equals("resource")) {
-        String resName = this.resGen_.lookup(fl.template);
-        fqrn = String.format("%s::*::*::resource/%s", provider_, resName);
-      } else {
-        fqrn = String.format("%s::%s/%s", fqan_, fl.type, fl.template);
-      }
-      logger_.debug("Fully qualified resource name formed : fqrn={}", fqrn);
-      // Handle each type of generation
-      switch (fl.type) {
-        case "folder": {
-          out.toFile().getParentFile().mkdirs();
-          break;
-        }
-        case "template":
-        case "resource": {
-          out.toFile().getParentFile().mkdirs();
-          try (BufferedWriter w = Files.newBufferedWriter(out)) {
-            Mustache cachedOutput = cache_.get(fqrn);
-            if (cachedOutput == null) {
-              Path resourcePath = fl.type.equals("template") ? jarUtil_.getAssetPath(fl.template)
-                  : this.resGen_.get(fl.template); // TODO: slight inefficiency in the fact that resource generator is
-                                                   // looked up twice.
-              cachedOutput = generateTemplate(fqrn, resourcePath);
-              cache_.put(fqrn, cachedOutput);
-            }
-            generateFile(w, cachedOutput, data);
-          }
-          break;
-        }
-        case "archetype": {
-          out.toFile().getParentFile().mkdirs();
-          ArchetypeGenerator g = new ArchetypeGenerator(this.provider_, fl.template, "latest"); // TODO: cache this
-          String newNamespace = stringTemplateToString(fl.data.get("namespace"), data);
-          String newProject = stringTemplateToString(fl.data.get("project"), data);
-          g.generateArchetype_(newNamespace, newProject, out, depth + 1);
-          break;
-        }
-        default:
-          throw new IllegalArgumentException("Template type or conversion not supported");
-      }
-    }
-
-  }
-*/
 
   @Override
   public String getName() {
